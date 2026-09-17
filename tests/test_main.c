@@ -112,6 +112,37 @@ static bool test_vector_i32_reserve_overflow() {
   return true;
 }
 
+static bool test_vector_i32_push() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+  bool success = vector_i32_push(&vector, 0);
+  CHECK(success == true);
+  CHECK(vector.len == 1);
+  CHECK(vector.cap >= vector.len);
+  CHECK(vector.data[0] == 0);
+
+  usize previous_cap = vector.cap;
+  for (usize i = vector.len; i < previous_cap; i++) {
+    success = vector_i32_push(&vector, 1);
+    CHECK(success == true);
+  }
+  CHECK(vector.cap == previous_cap);
+  CHECK(vector.len == previous_cap);
+
+  success = vector_i32_push(&vector, -1);
+  CHECK(success == true);
+  CHECK(vector.len == previous_cap + 1);
+  CHECK(vector.cap > previous_cap);
+  CHECK(vector.data[0] == 0);
+  CHECK(vector.data[previous_cap] == -1);
+  if (previous_cap > 1) {
+    CHECK(vector.data[previous_cap - 1] == 1);
+  }
+
+  vector_i32_deinit(&vector);
+  return true;
+}
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -139,6 +170,7 @@ int main(void) {
               test_vector_i32_reserve_success);
   record_test(&stats, "vector<i32> reserve overflow",
               test_vector_i32_reserve_overflow);
+  record_test(&stats, "vector<i32> push", test_vector_i32_push);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;

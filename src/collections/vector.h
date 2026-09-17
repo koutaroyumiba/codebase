@@ -41,4 +41,14 @@ void vector_i32_deinit(VectorI32 *vector);
  */
 bool vector_i32_reserve(VectorI32 *vector, usize min_capacity);
 
+/* - vector must not be nullptr
+ * - vector must be initialised
+ * - on success, value is copied to the end and len increases by one
+ * - grows capacity when len == cap
+ * - growth may invalidate pointers into data
+ * - returns false on allocation or capacity-overflow failure
+ * - failure leaves the vector unchanged
+ */
+bool vector_i32_push(VectorI32 *vector, i32 value);
+
 #endif // CB_COLLECTIONS_VECTOR_H
