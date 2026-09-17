@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "base/types.h"
+#include "collections/vector.h"
 
 #define CHECK(condition)                                                       \
   do {                                                                         \
@@ -35,6 +37,25 @@ static bool test_base_type_sizes(void) {
   return true;
 }
 
+static bool test_vector_i32() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+  CHECK(vector.data == nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap == 0);
+
+  vector.data = malloc(sizeof(*vector.data) * 2);
+  CHECK(vector.data != nullptr);
+  vector.len = 2;
+  vector.cap = 2;
+  vector_i32_deinit(&vector);
+  CHECK(vector.data == nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap == 0);
+
+  return true;
+}
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -57,6 +78,7 @@ static void print_stats(TestStats *stats) {
 int main(void) {
   TestStats stats = {.total = 0, .failures = 0};
   record_test(&stats, "base type sizes", test_base_type_sizes);
+  record_test(&stats, "vector<i32> lifecycle", test_vector_i32);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;

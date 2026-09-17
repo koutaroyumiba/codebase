@@ -9,6 +9,7 @@ TEST_TARGET := $(BUILD_DIR)/codebase_tests
 
 SOURCES := $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
+LIB_OBJECTS := $(filter-out $(BUILD_DIR)/main.o, $(OBJECTS))
 DEPS := $(OBJECTS:.o=.d) $(TEST_TARGET).d
 
 .PHONY: all run test clean
@@ -24,8 +25,8 @@ test: $(TEST_TARGET)
 $(TARGET): $(OBJECTS) | $(BUILD_DIR)
 	$(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
 
-$(TEST_TARGET): tests/test_main.c | $(BUILD_DIR)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -MF $@.d -MT $@ $< -o $@
+$(TEST_TARGET): tests/test_main.c $(LIB_OBJECTS) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -MF $@.d -MT $@ $< $(LIB_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
