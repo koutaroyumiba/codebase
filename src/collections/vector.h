@@ -29,4 +29,16 @@ typedef struct {
 void vector_i32_init(VectorI32 *vector);
 void vector_i32_deinit(VectorI32 *vector);
 
+/* - vector must not be nullptr
+ * - vector must be initialised
+ * - on success, cap >= min_capacity
+ * - existing elements and len are preserved
+ * - never shrinks
+ * - returns true (noop) when capacity is already sufficient
+ * - returns false on allocation or size-overflow failure
+ * - failure leaves the vector unchanged
+ * - successful growth may invalidate pointers into data
+ */
+bool vector_i32_reserve(VectorI32 *vector, usize min_capacity);
+
 #endif // CB_COLLECTIONS_VECTOR_H

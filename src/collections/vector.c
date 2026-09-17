@@ -1,6 +1,7 @@
 #include "collections/vector.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 void vector_i32_init(VectorI32 *vector) {
@@ -16,4 +17,25 @@ void vector_i32_deinit(VectorI32 *vector) {
   vector->data = nullptr;
   vector->len = 0;
   vector->cap = 0;
+}
+
+bool vector_i32_reserve(VectorI32 *vector, usize min_capacity) {
+  assert(vector != nullptr);
+  if (min_capacity <= vector->cap) {
+    return true;
+  }
+
+  if (min_capacity > SIZE_MAX / sizeof(*vector->data)) {
+    // usize can overflow on multiplication
+    return false;
+  }
+
+  i32 *new_ptr = realloc(vector->data, min_capacity * sizeof(*vector->data));
+  if (new_ptr == nullptr) {
+    return false;
+  }
+
+  vector->data = new_ptr;
+  vector->cap = min_capacity;
+  return true;
 }

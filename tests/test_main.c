@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -56,6 +57,61 @@ static bool test_vector_i32() {
   return true;
 }
 
+static bool test_vector_i32_reserve_success() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+  bool success = vector_i32_reserve(&vector, 2);
+  CHECK(success == true);
+  CHECK(vector.data != nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap >= 2);
+  vector.data[0] = 1;
+  vector.data[1] = 2;
+  vector.len = 2;
+  i32 *previous_data = vector.data;
+  usize previous_cap = vector.cap;
+  success = vector_i32_reserve(&vector, 2);
+  CHECK(success == true);
+  CHECK(vector.data == previous_data);
+  CHECK(vector.cap == previous_cap);
+  success = vector_i32_reserve(&vector, 8);
+  CHECK(success == true);
+  CHECK(vector.cap >= 8);
+  CHECK(vector.len == 2);
+  CHECK(vector.data[0] == 1);
+  CHECK(vector.data[1] == 2);
+  vector_i32_deinit(&vector);
+  CHECK(vector.data == nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap == 0);
+
+  return true;
+}
+
+static bool test_vector_i32_reserve_overflow() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+  bool success = vector_i32_reserve(&vector, 2);
+  CHECK(success == true);
+  CHECK(vector.data != nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap >= 2);
+  i32 *previous_data = vector.data;
+  usize previous_len = vector.len;
+  usize previous_cap = vector.cap;
+  success = vector_i32_reserve(&vector, SIZE_MAX);
+  CHECK(success == false);
+  CHECK(vector.data == previous_data);
+  CHECK(vector.len == previous_len);
+  CHECK(vector.cap == previous_cap);
+  vector_i32_deinit(&vector);
+  CHECK(vector.data == nullptr);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap == 0);
+
+  return true;
+}
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -79,6 +135,10 @@ int main(void) {
   TestStats stats = {.total = 0, .failures = 0};
   record_test(&stats, "base type sizes", test_base_type_sizes);
   record_test(&stats, "vector<i32> lifecycle", test_vector_i32);
+  record_test(&stats, "vector<i32> reserve success",
+              test_vector_i32_reserve_success);
+  record_test(&stats, "vector<i32> reserve overflow",
+              test_vector_i32_reserve_overflow);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;
