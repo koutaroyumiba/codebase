@@ -1,7 +1,7 @@
 #include "collections/vector.h"
+#include "base/utils.h"
 
 #include <assert.h>
-#include <stdint.h>
 #include <stdlib.h>
 
 void vector_i32_init(VectorI32 *vector) {
@@ -25,7 +25,7 @@ bool vector_i32_reserve(VectorI32 *vector, usize min_capacity) {
     return true;
   }
 
-  if (min_capacity > SIZE_MAX / sizeof(*vector->data)) {
+  if (min_capacity > USIZE_MAX / sizeof(*vector->data)) {
     // usize can overflow on multiplication
     return false;
   }
@@ -43,18 +43,16 @@ bool vector_i32_reserve(VectorI32 *vector, usize min_capacity) {
 bool vector_i32_push(VectorI32 *vector, i32 value) {
   assert(vector != nullptr);
   if (vector->len == vector->cap) {
-    usize max_capacity = SIZE_MAX / sizeof(*vector->data);
+    usize max_capacity = USIZE_MAX / sizeof(*vector->data);
     if (vector->len == max_capacity) {
       return false;
     }
 
     usize new_capacity;
-    if (vector->cap == 0) {
-      new_capacity = 8;
-    } else if (vector->cap > max_capacity / 2) {
+    if (vector->cap > max_capacity / 2) {
       new_capacity = max_capacity;
     } else {
-      new_capacity = vector->cap * 2;
+      new_capacity = Max(8, vector->cap * 2);
     }
 
     bool success = vector_i32_reserve(vector, new_capacity);
