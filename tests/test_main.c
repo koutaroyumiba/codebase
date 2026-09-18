@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "algorithms/search.h"
 #include "base/types.h"
 #include "collections/vector.h"
 
@@ -205,6 +206,32 @@ static bool test_vector_i32_clear() {
   return true;
 }
 
+static bool test_linear_search_i32() {
+  i32 values[] = {I32_MIN, -2, 7, -2, I32_MAX};
+  usize len = ArrayLen(values);
+
+  OptionUsize result = linear_search_i32(values, len, -2);
+  CHECK(result.has_value == true);
+  CHECK(result.value == 1);
+
+  result = linear_search_i32(values, len, I32_MAX);
+  CHECK(result.has_value == true);
+  CHECK(result.value == 4);
+
+  result = linear_search_i32(values, len, 99);
+  CHECK(result.has_value == false);
+
+  result = linear_search_i32(nullptr, 0, 99);
+  CHECK(result.has_value == false);
+
+  return true;
+}
+
+/* ====================================
+ * === TEST RUNNERS IMPLEMENTATIONS ===
+ * ====================================
+ */
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -227,6 +254,7 @@ static void print_stats(TestStats *stats) {
 int main(void) {
   TestStats stats = {.total = 0, .failures = 0};
   record_test(&stats, "base type sizes", test_base_type_sizes);
+
   record_test(&stats, "vector<i32> lifecycle", test_vector_i32);
   record_test(&stats, "vector<i32> reserve success",
               test_vector_i32_reserve_success);
@@ -235,6 +263,8 @@ int main(void) {
   record_test(&stats, "vector<i32> push", test_vector_i32_push);
   record_test(&stats, "vector<i32> pop", test_vector_i32_pop);
   record_test(&stats, "vector<i32> clear", test_vector_i32_clear);
+
+  record_test(&stats, "linear_search<i32>", test_linear_search_i32);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;

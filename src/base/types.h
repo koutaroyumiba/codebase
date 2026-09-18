@@ -29,4 +29,9 @@ typedef struct {
   i32 value;
 } OptionI32;
 
+typedef struct {
+  bool has_value;
+  usize value;
+} OptionUsize;
+
 #endif // CB_BASE_TYPES_H
