@@ -24,4 +24,9 @@ static_assert(CHAR_BIT == 8, "codebase requires 8-bit bytes");
 static_assert(sizeof(float) * CHAR_BIT == 32, "f32 requires a 32-bit float");
 static_assert(sizeof(double) * CHAR_BIT == 64, "f64 requires a 64-bit float");
 
+typedef struct {
+  bool has_value;
+  i32 value;
+} OptionI32;
+
 #endif // CB_BASE_TYPES_H
