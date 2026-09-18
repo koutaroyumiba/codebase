@@ -59,4 +59,11 @@ bool vector_i32_push(VectorI32 *vector, i32 value);
  */
 OptionI32 vector_i32_pop(VectorI32 *vector);
 
+/* - vector must not be nullptr
+ * - vector must be initialised
+ * - removes all elements
+ * - data and cap are unchanged
+ */
+void vector_i32_clear(VectorI32 *vector);
+
 #endif // CB_COLLECTIONS_VECTOR_H

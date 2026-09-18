@@ -176,6 +176,35 @@ static bool test_vector_i32_pop() {
   return true;
 }
 
+static bool test_vector_i32_clear() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+
+  vector_i32_clear(&vector);
+  CHECK(vector.len == 0);
+  CHECK(vector.cap == 0);
+  CHECK(vector.data == nullptr);
+
+  CHECK(vector_i32_push(&vector, 10));
+  CHECK(vector_i32_push(&vector, 20));
+
+  i32 *previous_data = vector.data;
+  usize previous_cap = vector.cap;
+
+  vector_i32_clear(&vector);
+  CHECK(vector.len == 0);
+  CHECK(vector.data == previous_data);
+  CHECK(vector.cap == previous_cap);
+
+  CHECK(vector_i32_push(&vector, 30));
+  CHECK(vector.len == 1);
+  CHECK(vector.data == previous_data);
+  CHECK(vector.data[0] == 30);
+
+  vector_i32_deinit(&vector);
+  return true;
+}
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -205,6 +234,7 @@ int main(void) {
               test_vector_i32_reserve_overflow);
   record_test(&stats, "vector<i32> push", test_vector_i32_push);
   record_test(&stats, "vector<i32> pop", test_vector_i32_pop);
+  record_test(&stats, "vector<i32> clear", test_vector_i32_clear);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;

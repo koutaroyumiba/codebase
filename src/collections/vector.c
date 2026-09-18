@@ -83,3 +83,8 @@ OptionI32 vector_i32_pop(VectorI32 *vector) {
       .value = popped_element,
   };
 }
+
+void vector_i32_clear(VectorI32 *vector) {
+  assert(vector != nullptr);
+  vector->len = 0;
+}
