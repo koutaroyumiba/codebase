@@ -65,3 +65,21 @@ bool vector_i32_push(VectorI32 *vector, i32 value) {
   vector->len++;
   return true;
 }
+
+OptionI32 vector_i32_pop(VectorI32 *vector) {
+  assert(vector != nullptr);
+  if (vector->len == 0) {
+    return (OptionI32){
+        .has_value = false,
+        .value = 0,
+    };
+  }
+
+  vector->len--;
+  i32 popped_element = vector->data[vector->len];
+
+  return (OptionI32){
+      .has_value = true,
+      .value = popped_element,
+  };
+}

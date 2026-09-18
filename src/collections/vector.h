@@ -1,7 +1,7 @@
 #ifndef CB_COLLECTIONS_VECTOR_H
 #define CB_COLLECTIONS_VECTOR_H
 
-#include "base/types.h"
+#include "base/base.h"
 
 /* vector<i32> implementation
  *
@@ -50,5 +50,13 @@ bool vector_i32_reserve(VectorI32 *vector, usize min_capacity);
  * - failure leaves the vector unchanged
  */
 bool vector_i32_push(VectorI32 *vector, i32 value);
+
+/* - vector must not be nullptr
+ * - vector must be initialised
+ * - returns the final element and decreases len when non-empty
+ * - returns an option with has_value == false when empty
+ * - data and cap are unchanged
+ */
+OptionI32 vector_i32_pop(VectorI32 *vector);
 
 #endif // CB_COLLECTIONS_VECTOR_H

@@ -143,6 +143,39 @@ static bool test_vector_i32_push() {
   return true;
 }
 
+static bool test_vector_i32_pop() {
+  VectorI32 vector;
+  vector_i32_init(&vector);
+
+  OptionI32 popped = vector_i32_pop(&vector);
+  CHECK(popped.has_value == false);
+  CHECK(vector.len == 0);
+
+  CHECK(vector_i32_push(&vector, 10));
+  CHECK(vector_i32_push(&vector, 20));
+
+  i32 *previous_data = vector.data;
+  usize previous_cap = vector.cap;
+
+  popped = vector_i32_pop(&vector);
+  CHECK(popped.has_value == true);
+  CHECK(popped.value == 20);
+  CHECK(vector.len == 1);
+  CHECK(vector.data == previous_data);
+  CHECK(vector.cap == previous_cap);
+
+  popped = vector_i32_pop(&vector);
+  CHECK(popped.has_value == true);
+  CHECK(popped.value == 10);
+  CHECK(vector.len == 0);
+
+  popped = vector_i32_pop(&vector);
+  CHECK(popped.has_value == false);
+
+  vector_i32_deinit(&vector);
+  return true;
+}
+
 static bool run_test(const char *name, test_fn test) {
   bool passed = test();
 
@@ -171,6 +204,7 @@ int main(void) {
   record_test(&stats, "vector<i32> reserve overflow",
               test_vector_i32_reserve_overflow);
   record_test(&stats, "vector<i32> push", test_vector_i32_push);
+  record_test(&stats, "vector<i32> pop", test_vector_i32_pop);
 
   print_stats(&stats);
   return stats.failures == 0 ? 0 : 1;
