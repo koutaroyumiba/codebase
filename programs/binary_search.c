@@ -7,7 +7,7 @@ int main() {
   log_set_output(stdout);
   log_set_level(LL_INFO);
   // enables trace logging for binary-search module
-  if (!log_enable_channel("binary-search")) {
+  if (!log_enable_channel(BINARY_SEARCH_CHANNEL)) {
     CBLOG(LL_ERROR, "failed to enable binary-search trace");
     return 1;
   }

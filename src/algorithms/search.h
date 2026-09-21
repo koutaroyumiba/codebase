@@ -3,6 +3,9 @@
 
 #include "base/base.h"
 
+/* channel for logs */
+extern const char BINARY_SEARCH_CHANNEL[];
+
 /* - data must not be nullptr when len > 0
  * - returns the index of the first matching element
  * - returns an option with has_value == false when no match exists

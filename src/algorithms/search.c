@@ -3,6 +3,8 @@
 #include "algorithms/search.h"
 #include "diagnostics/log.h"
 
+const char BINARY_SEARCH_CHANNEL[] = "binary-search";
+
 OptionUsize linear_search_i32(const i32 *data, usize len, i32 target) {
   assert(data != nullptr || len == 0);
 
@@ -33,7 +35,7 @@ OptionUsize binary_search_i32(const i32 *data, usize len, i32 target) {
     //    (low + high) => can overflow
     usize mid = low + (high - low) / 2;
     if (data[mid] == target) {
-      CBTRACE("binary-search",
+      CBTRACE(BINARY_SEARCH_CHANNEL,
               "target=%d low=%zu high=%zu mid=%zu value=%d decision=found",
               target, low, high, mid, data[mid]);
       CBTRACE("binary-search", "target=%d result=found low=%zu high=%zu",
@@ -45,13 +47,13 @@ OptionUsize binary_search_i32(const i32 *data, usize len, i32 target) {
     }
 
     if (data[mid] < target) {
-      CBTRACE("binary-search",
+      CBTRACE(BINARY_SEARCH_CHANNEL,
               "target=%d low=%zu high=%zu mid=%zu value=%d decision=right, "
               "next_low=%zu next_high=%zu",
               target, low, high, mid, data[mid], mid + 1, high);
       low = mid + 1;
     } else {
-      CBTRACE("binary-search",
+      CBTRACE(BINARY_SEARCH_CHANNEL,
               "target=%d low=%zu high=%zu mid=%zu value=%d decision=left, "
               "next_low=%zu next_high=%zu",
               target, low, high, mid, data[mid], low, mid);
@@ -59,7 +61,7 @@ OptionUsize binary_search_i32(const i32 *data, usize len, i32 target) {
     }
   }
 
-  CBTRACE("binary-search", "target=%d result=not-found low=%zu high=%zu",
+  CBTRACE(BINARY_SEARCH_CHANNEL, "target=%d result=not-found low=%zu high=%zu",
           target, low, high);
   return (OptionUsize){
       .has_value = false,
