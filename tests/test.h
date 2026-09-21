@@ -8,7 +8,7 @@
 #define CHECK(condition)                                                       \
   do {                                                                         \
     if (!(condition)) {                                                        \
-      fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__,         \
+      fprintf(stderr, "\t>> [ %s:%d ] check failed: %s\n", __FILE__, __LINE__, \
               #condition);                                                     \
       return false;                                                            \
     }                                                                          \
@@ -28,5 +28,6 @@ void register_base_tests(TestStats *stats);
 void register_log_tests(TestStats *stats);
 void register_vector_tests(TestStats *state);
 void register_search_tests(TestStats *stats);
+void register_sort_tests(TestStats *stats);
 
 #endif // CB_TEST_H
