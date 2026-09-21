@@ -2,15 +2,18 @@
 #include "diagnostics/log.h"
 
 int main() {
-  const i32 values[] = {1, 3, 5, 7, 9};
+  /* ===== LOGGING INIT ===== */
   log_reset();
   log_set_output(stdout);
   log_set_level(LL_INFO);
-
+  // enables trace logging for binary-search module
   if (!log_enable_channel("binary-search")) {
     CBLOG(LL_ERROR, "failed to enable binary-search trace");
     return 1;
   }
+
+  /* ===== PROGRAM ===== */
+  const i32 values[] = {1, 3, 5, 7, 9};
 
   OptionUsize result = binary_search_i32(values, ArrayLen(values), 7);
 
