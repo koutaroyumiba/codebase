@@ -8,16 +8,16 @@ int main() {
   log_set_level(LL_INFO);
 
   if (!log_enable_channel("binary-search")) {
-    CBLOG(LL_ERROR, "failed to enable binary-search trace\n");
+    CBLOG(LL_ERROR, "failed to enable binary-search trace");
     return 1;
   }
 
   OptionUsize result = binary_search_i32(values, ArrayLen(values), 7);
 
   if (result.has_value) {
-    CBLOG(LL_INFO, "found at index %zu\n", result.value);
+    CBLOG(LL_INFO, "found at index %zu", result.value);
   } else {
-    CBLOG(LL_INFO, "not found\n");
+    CBLOG(LL_INFO, "not found");
   }
 
   return 0;
