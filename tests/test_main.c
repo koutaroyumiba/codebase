@@ -7,6 +7,7 @@ int main(void) {
   register_log_tests(&stats);
   register_vector_tests(&stats);
   register_search_tests(&stats);
+  register_sort_tests(&stats);
 
   print_test_stats(&stats);
   return stats.failures == 0 ? 0 : 1;
