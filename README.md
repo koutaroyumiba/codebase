@@ -16,8 +16,7 @@ codebase/
         diagnostics/                // logging, named trace channels, and diagnostic output policy
         platform/                   // operating system specific implementations
     tests/                      // contains tests
-    examples/                   // demonstrates individual modules
-    programs/                   // programs
+    programs/                   // runnable demos and complete command-line tools
     build/                      // generated files (.gitignore)
     README.md
     Makefile

@@ -107,8 +107,7 @@ Diagnostics is a cross-cutting dependency: other modules may emit events through
 - `src/io/`: portable file and stream operations.
 - `src/diagnostics/`: logging, named trace channels, and diagnostic output policy.
 - `src/platform/`: operating-system-specific implementations.
-- `programs/`: complete command-line tools.
-- `examples/`: minimal demonstrations of individual modules.
+- `programs/`: all runnable executables, including small module demonstrations and complete command-line tools. Use descriptive filenames to distinguish demos from full programs.
 - `tests/`: automated behavior tests.
 
 Create a directory only when its first module is started.
@@ -182,7 +181,7 @@ Start concrete rather than building a general observability framework:
 
 Channel names are part of the learning interface. Prefer `<module>-trace` names; keep an established public type name when it aids recognition, as in `vectorI32-trace`.
 
-Do not parse environment variables yet. Initially, examples and tests may enable channels programmatically. Environment or command-line configuration can be added when text parsing and complete programs exist.
+Do not parse environment variables yet. Initially, small programs and tests may enable channels programmatically. Environment or command-line configuration can be added when text parsing and complete programs exist.
 
 ### Trace-event rules
 
@@ -1110,7 +1109,7 @@ Add monotonic high-resolution timing and use it to compare sorting algorithms re
 ### Files to create or change
 
 - Create `src/platform/time.h/.c`.
-- Create `examples/sort_benchmark.c`.
+- Create `programs/sort_benchmark.c`.
 
 ### Concepts to understand
 
