@@ -51,4 +51,7 @@ void log_disable_all_channels();
 void log_message(LogLevel level, const char *format, ...);
 void log_channel(const char *channel, const char *format, ...);
 
+#define CBLOG(level, ...) log_message((level), __VA_ARGS__)
+#define CBTRACE(channel, ...) log_channel((channel), __VA_ARGS__)
+
 #endif // CB_DIAGNOSTICS_LOG_H
