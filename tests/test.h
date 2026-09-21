@@ -25,6 +25,7 @@ void record_test(TestStats *stats, const char *name, TestFn test);
 void print_test_stats(const TestStats *stats);
 
 void register_base_tests(TestStats *stats);
+void register_log_tests(TestStats *stats);
 void register_vector_tests(TestStats *state);
 void register_search_tests(TestStats *stats);
 

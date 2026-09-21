@@ -7,14 +7,14 @@ Mainly made to use as few libraries as possible and for my own learning and expl
 ```
 codebase/
     src/                        // contains source code
-        base/
-        memory/
-        collections/
-        algorithms/
-        text/
-        io/
-        diagnostics/
-        platform/
+        base/                       // types and helpers with no project dependencies
+        memory/                     // allocation strategies and traversal algorithms
+        collections/                // data structures and ownership rules
+        algorithms/                 // searching, sorting, and traversal algorithms
+        fmt/                        // string views, builders, parsing and formatting
+        io/                         // portable file and stream operations
+        diagnostics/                // logging, named trace channels, and diagnostic output policy
+        platform/                   // operating system specific implementations
     tests/                      // contains tests
     examples/                   // demonstrates individual modules
     programs/                   // programs
