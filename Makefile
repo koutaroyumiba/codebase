@@ -4,6 +4,7 @@ CFLAGS ?= -std=c23 -Wall -Wextra -Wpedantic
 
 SRC_DIR := src
 TEST_DIR := tests
+PROGRAM_DIR := programs
 BUILD_DIR := build
 TARGET := $(BUILD_DIR)/codebase
 TEST_TARGET := $(BUILD_DIR)/codebase_tests
@@ -15,7 +16,7 @@ TEST_OBJECTS := $(patsubst $(TEST_DIR)/%.c,$(BUILD_DIR)/$(TEST_DIR)/%.o,$(TEST_S
 LIB_OBJECTS := $(filter-out $(BUILD_DIR)/main.o, $(OBJECTS))
 DEPS := $(OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d)
 
-.PHONY: all run test clean
+.PHONY: all run test runp clean
 
 all: $(TARGET)
 
@@ -24,6 +25,14 @@ run: $(TARGET)
 
 test: $(TEST_TARGET)
 	./$(TEST_TARGET)
+
+runp:
+	@test -n "$(PROGRAM)" || { \
+		echo "usage: make runp PROGRAM=<name>"; \
+		exit 2; \
+	}
+	$(MAKE) $(BUILD_DIR)/$(PROGRAM_DIR)/$(PROGRAM)
+	./$(BUILD_DIR)/$(PROGRAM_DIR)/$(PROGRAM)
 
 $(TARGET): $(OBJECTS) | $(BUILD_DIR)
 	$(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
@@ -38,6 +47,11 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(BUILD_DIR)/$(PROGRAM_DIR)/%: $(PROGRAM_DIR)/%.c $(LIB_OBJECTS)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(LIB_OBJECTS) \
+		$(LDFLAGS) $(LDLIBS) -o $@
 
 $(BUILD_DIR):
 	mkdir -p $@
