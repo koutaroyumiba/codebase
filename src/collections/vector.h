@@ -26,8 +26,8 @@ typedef struct {
   usize cap;
 } VectorI32;
 
-void vector_i32_init(VectorI32 *vector);
-void vector_i32_deinit(VectorI32 *vector);
+void VectorI32_init(VectorI32 *vector);
+void VectorI32_deinit(VectorI32 *vector);
 
 /* - vector must not be nullptr
  * - vector must be initialised
@@ -39,7 +39,7 @@ void vector_i32_deinit(VectorI32 *vector);
  * - failure leaves the vector unchanged
  * - successful growth may invalidate pointers into data
  */
-bool vector_i32_reserve(VectorI32 *vector, usize min_capacity);
+bool VectorI32_reserve(VectorI32 *vector, usize min_capacity);
 
 /* - vector must not be nullptr
  * - vector must be initialised
@@ -49,7 +49,7 @@ bool vector_i32_reserve(VectorI32 *vector, usize min_capacity);
  * - returns false on allocation or capacity-overflow failure
  * - failure leaves the vector unchanged
  */
-bool vector_i32_push(VectorI32 *vector, i32 value);
+bool VectorI32_push(VectorI32 *vector, i32 value);
 
 /* - vector must not be nullptr
  * - vector must be initialised
@@ -57,13 +57,13 @@ bool vector_i32_push(VectorI32 *vector, i32 value);
  * - returns an option with has_value == false when empty
  * - data and cap are unchanged
  */
-OptionI32 vector_i32_pop(VectorI32 *vector);
+OptionI32 VectorI32_pop(VectorI32 *vector);
 
 /* - vector must not be nullptr
  * - vector must be initialised
  * - removes all elements
  * - data and cap are unchanged
  */
-void vector_i32_clear(VectorI32 *vector);
+void VectorI32_clear(VectorI32 *vector);
 
 #endif // CB_COLLECTIONS_VECTOR_H

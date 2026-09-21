@@ -17,7 +17,8 @@ void print_test_stats(const TestStats *stats) {
   if (stats->failures == 0) {
     printf("All test(s) passed - [%zu/%zu]\n", stats->total - stats->failures,
            stats->total);
+  } else {
+    printf("%zu test(s) failed - [%zu/%zu]\n", stats->failures,
+           stats->total - stats->failures, stats->total);
   }
-  printf("%zu test(s) failed - [%zu/%zu]\n", stats->failures,
-         stats->total - stats->failures, stats->total);
 }

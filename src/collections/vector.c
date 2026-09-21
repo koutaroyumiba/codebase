@@ -4,14 +4,14 @@
 #include <assert.h>
 #include <stdlib.h>
 
-void vector_i32_init(VectorI32 *vector) {
+void VectorI32_init(VectorI32 *vector) {
   assert(vector != nullptr);
   vector->data = nullptr;
   vector->len = 0;
   vector->cap = 0;
 }
 
-void vector_i32_deinit(VectorI32 *vector) {
+void VectorI32_deinit(VectorI32 *vector) {
   assert(vector != nullptr);
   free(vector->data);
   vector->data = nullptr;
@@ -19,7 +19,7 @@ void vector_i32_deinit(VectorI32 *vector) {
   vector->cap = 0;
 }
 
-bool vector_i32_reserve(VectorI32 *vector, usize min_capacity) {
+bool VectorI32_reserve(VectorI32 *vector, usize min_capacity) {
   assert(vector != nullptr);
   if (min_capacity <= vector->cap) {
     return true;
@@ -40,7 +40,7 @@ bool vector_i32_reserve(VectorI32 *vector, usize min_capacity) {
   return true;
 }
 
-bool vector_i32_push(VectorI32 *vector, i32 value) {
+bool VectorI32_push(VectorI32 *vector, i32 value) {
   assert(vector != nullptr);
   if (vector->len == vector->cap) {
     usize max_capacity = USIZE_MAX / sizeof(*vector->data);
@@ -55,7 +55,7 @@ bool vector_i32_push(VectorI32 *vector, i32 value) {
       new_capacity = Max(8, vector->cap * 2);
     }
 
-    bool success = vector_i32_reserve(vector, new_capacity);
+    bool success = VectorI32_reserve(vector, new_capacity);
     if (!success) {
       return false;
     }
@@ -66,7 +66,7 @@ bool vector_i32_push(VectorI32 *vector, i32 value) {
   return true;
 }
 
-OptionI32 vector_i32_pop(VectorI32 *vector) {
+OptionI32 VectorI32_pop(VectorI32 *vector) {
   assert(vector != nullptr);
   if (vector->len == 0) {
     return (OptionI32){
@@ -84,7 +84,7 @@ OptionI32 vector_i32_pop(VectorI32 *vector) {
   };
 }
 
-void vector_i32_clear(VectorI32 *vector) {
+void VectorI32_clear(VectorI32 *vector) {
   assert(vector != nullptr);
   vector->len = 0;
 }
