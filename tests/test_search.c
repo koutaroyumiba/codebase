@@ -58,6 +58,6 @@ static bool test_binary_search_i32() {
 }
 
 void register_search_tests(TestStats *stats) {
-  record_test(stats, "linear_search<i32>", test_linear_search_i32);
-  record_test(stats, "binary_search<i32>", test_binary_search_i32);
+  record_test(stats, "[search] linear_search<i32>", test_linear_search_i32);
+  record_test(stats, "[search] binary_search<i32>", test_binary_search_i32);
 }
