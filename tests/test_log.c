@@ -65,7 +65,7 @@ static bool test_log_boundaries() {
   bool closed = fclose(capture) == 0;
 
   CHECK(captured);
-  CHECK(strcmp(output, "[ INFO  ] this should be written\n") == 0);
+  CHECK(strcmp(output, "[INFO] this should be written\n") == 0);
   CHECK(closed);
 
   return true;
@@ -91,7 +91,7 @@ static bool test_log_channels_are_independent() {
 
   CHECK(enabled);
   CHECK(captured);
-  CHECK(strcmp(output, "[binary-search-trace] low=0 high=4\n") == 0);
+  CHECK(strcmp(output, "[TRACE] [binary-search-trace] low=0 high=4\n") == 0);
   CHECK(closed);
 
   return true;
