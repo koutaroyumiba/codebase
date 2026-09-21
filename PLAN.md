@@ -15,9 +15,10 @@ For every milestone:
 3. Run the tests and observe the expected failure (**red**).
 4. Implement the smallest understandable solution yourself.
 5. Run tests until they pass (**green**).
-6. Trace at least one example by hand.
-7. Explain ownership, invariants, failure behavior, and complexity.
-8. Request review before moving forward.
+6. Enable the module's trace channel and inspect at least one execution.
+7. Trace the same example by hand and compare it with the emitted events.
+8. Explain ownership, invariants, failure behavior, and complexity.
+9. Request review before moving forward.
 
 The agent may supply tests and review code, but you should write the implementation. Tests for distant milestones should not be added to the build early: their missing symbols would prevent current tests from running, and their APIs may change based on what earlier programs teach us.
 
@@ -31,6 +32,8 @@ A reusable module is done when it has:
 - defined failure behavior;
 - tests for normal behavior and meaningful edge cases;
 - time and space complexity notes where relevant;
+- a named trace channel for meaningful internal state transitions, unless the module has no useful internal behavior to expose;
+- tracing that is silent by default and does not change results, ownership, or failure behavior;
 - a small example or use in a real program;
 - passing `make test` and sanitizer checks when available.
 
@@ -88,9 +91,11 @@ Collections / memory / platform
 Base
    ↓
 C standard library and native OS APIs
+
+All applicable layers ──→ Diagnostics ──→ Base / C standard library
 ```
 
-A module only includes what it actually needs. A sorting algorithm may depend directly on `base`; it does not need to pass through `collections`.
+Diagnostics is a cross-cutting dependency: other modules may emit events through it, but it must not depend back on algorithms, collections, or programs. A module only includes what it actually needs. A sorting algorithm may depend directly on `base`; it does not need to pass through `collections`.
 
 ### Directory responsibilities
 
@@ -100,6 +105,7 @@ A module only includes what it actually needs. A sorting algorithm may depend di
 - `src/memory/`: allocation strategies and checked size calculations.
 - `src/text/`: string views, builders, parsing, and formatting.
 - `src/io/`: portable file and stream operations.
+- `src/diagnostics/`: logging, named trace channels, and diagnostic output policy.
 - `src/platform/`: operating-system-specific implementations.
 - `programs/`: complete command-line tools.
 - `examples/`: minimal demonstrations of individual modules.
@@ -142,6 +148,97 @@ make clean
 ```
 
 Do not introduce external dependencies or a larger build system unless the project reaches a limitation that can be demonstrated.
+
+---
+
+# Foundation milestone — Logging and named tracing (mandatory)
+
+### Goal
+
+Build a small logging facility first, then use it throughout the project to make otherwise invisible state changes observable while learning. A caller must be able to enable a channel such as `binary-search-trace` or `vectorI32-trace` and see that module's internal decisions.
+
+Logging is cross-cutting infrastructure, not an optional late systems branch. Every later data structure and algorithm must add a useful trace channel as part of its definition of done.
+
+### Files to create or change
+
+- Create `src/diagnostics/log.h`.
+- Create `src/diagnostics/log.c`.
+- Add focused tests to `tests/test_main.c`.
+- Instrument `src/algorithms/search.c` with `linear-search-trace` and `binary-search-trace`.
+- Instrument `src/collections/vector.c` with `vectorI32-trace`.
+- Add a small example showing how callers enable one or more channels.
+
+### Smallest useful design
+
+Start concrete rather than building a general observability framework:
+
+- log levels for ordinary messages;
+- independently enabled, named trace channels;
+- formatted output using variadic functions;
+- a configurable output stream, defaulting to standard error;
+- deterministic output by default, with timestamps off;
+- no allocation in the logging path;
+- all levels and channels silent or filtered according to explicit configuration.
+
+Channel names are part of the learning interface. Prefer `<module>-trace` names; keep an established public type name when it aids recognition, as in `vectorI32-trace`.
+
+Do not parse environment variables yet. Initially, examples and tests may enable channels programmatically. Environment or command-line configuration can be added when text parsing and complete programs exist.
+
+### Trace-event rules
+
+A useful trace records decisions and state transitions, not merely function entry:
+
+- binary search: target, `low`, `high`, `mid`, compared value, chosen half, and final result;
+- vector: operation, length/capacity before and after, growth decision, and success/failure;
+- sorting: current key/range, comparisons or moves, and the invariant boundary;
+- allocating structures: requested size, growth/failure decision, and resulting logical state;
+- traversals: frontier changes, visited nodes, and skipped repeats.
+
+Do not log raw pointer addresses by default: they make tests nondeterministic and usually teach less than lengths, indexes, capacities, and ownership events. Trace calls must not evaluate state-changing expressions, and logging failure must never change the module's result.
+
+### Concepts to understand
+
+- diagnostic output versus program output;
+- log levels versus named trace channels;
+- variadic functions and `va_list`;
+- global configuration tradeoffs;
+- deterministic tests and output injection;
+- why tracing must be observational rather than behavioral;
+- future thread-safety concerns.
+
+### Build steps
+
+1. Define and test configuration, level filtering, channel enable/disable, and output selection.
+2. Add formatted logging and tracing without allocating fixed or dynamic message buffers; write directly to the configured stream.
+3. Add the three initial channels and inspect traces for a tiny binary search and vector growth example.
+4. Document how a caller enables a single channel and how it disables tracing again.
+
+### Required tests
+
+- disabled channels produce no output;
+- enabling one channel does not enable another;
+- level filtering works at its boundaries;
+- formatted values appear correctly;
+- long messages are not silently truncated;
+- output can be redirected for deterministic capture;
+- timestamps are absent unless explicitly enabled in a later extension;
+- binary-search traces expose each narrowed range and the final found/not-found result;
+- vector traces expose no-growth, growth, empty-pop, and clear paths;
+- enabling or disabling tracing does not change return values or final data-structure state.
+
+### Acceptance criteria
+
+- logging is silent by default;
+- callers can independently toggle `binary-search-trace` and `vectorI32-trace`;
+- diagnostics go to the configured diagnostic destination, never normal program output;
+- no trace path allocates memory or changes control flow outcomes;
+- exact deterministic output can be tested with timestamps disabled;
+- `make test` passes;
+- every later applicable module includes trace events and a short trace exercise before its milestone can pass.
+
+### Optional hints
+
+Keep configuration process-global at first and document that it is not thread-safe. Revisit synchronization only when the threads milestone creates a real need. A `FILE *` destination keeps the first implementation concrete and lets tests capture output without inventing a new I/O abstraction.
 
 ---
 
@@ -1417,15 +1514,7 @@ Display offsets, bytes, and selected decoded integer values from a binary file.
 
 These come after the core curriculum. Complete them one at a time based on interest, not as prerequisites for earlier work.
 
-## Milestone 32 — Logging
-
-Build log levels, formatting, output destinations, and optional timestamps.
-
-Learn variadic functions, `va_list`, formatting, global-state tradeoffs, and thread-safety concerns.
-
-Tests should cover level filtering, long messages, formatting errors/policy, destination failures, and deterministic output with timestamps disabled or injected.
-
-## Milestone 33 — Threads and mutexes
+## Milestone 32 — Threads and mutexes
 
 Build a small platform wrapper, then a bounded producer/consumer queue.
 
@@ -1433,7 +1522,7 @@ Learn data races, mutual exclusion, condition variables, spurious wakeups, shutd
 
 Tests should use deterministic coordination where possible and cover queue full/empty waiting, multiple producers/consumers, shutdown, and sanitizer tooling. Do not use timing sleeps as the primary correctness mechanism.
 
-## Milestone 34 — Sockets
+## Milestone 33 — Sockets
 
 Build a small TCP echo client/server on the current platform.
 
@@ -1441,7 +1530,7 @@ Learn addresses, byte order, partial send/receive, connection lifecycle, blockin
 
 Tests should cover local loopback communication, empty and large messages, partial-operation loops, disconnects, malformed frames, and cleanup.
 
-## Milestone 35 — Processes
+## Milestone 34 — Processes
 
 Spawn a child process, capture output, inspect exit status, and handle errors.
 
@@ -1449,7 +1538,7 @@ Learn process creation, inherited resources, pipes, deadlocks from full pipes, a
 
 Tests should cover successful and failing commands, stdout/stderr capture, nonzero exit, missing executable, and cleanup.
 
-## Milestone 36 — Second-language implementation
+## Milestone 35 — Second-language implementation
 
 Reimplement selected stable modules in Zig or another language only after their C behavior is well understood.
 
@@ -1459,6 +1548,7 @@ Start with base types, vector, insertion sort, and tests. Compare safety model, 
 
 # Entire project order at a glance
 
+Foundation. Mandatory logging and named trace channels; instrument the existing search and vector modules.
 1. Insertion sort.
 2. Merge sort.
 3. Vector insertion/removal.
@@ -1490,11 +1580,10 @@ Start with base types, vector, insertion sort, and tests. Compare safety model, 
 29. Expression evaluator.
 30. Pathfinding demo.
 31. Binary-file inspector.
-32. Optional logging.
-33. Optional threads and mutexes.
-34. Optional sockets.
-35. Optional processes.
-36. Optional second-language implementation.
+32. Optional threads and mutexes.
+33. Optional sockets.
+34. Optional processes.
+35. Optional second-language implementation.
 
 This order is allowed to change when a real program exposes a better dependency order. The rule is to keep the next milestone concrete and small, not to predict every future abstraction perfectly.
 
@@ -1502,12 +1591,12 @@ This order is allowed to change when a real program exposes a better dependency 
 
 # Current checkpoint
 
-Work only on **Milestone 1: insertion sort** now.
+Work only on the **Foundation milestone: logging and named tracing** now. Insertion sort remains Milestone 1 and resumes after the logging foundation passes review.
 
-The supplied tests intentionally fail because `src/algorithms/sort.h` does not exist. Your next three actions are:
+The next three actions are:
 
-1. Create and document `src/algorithms/sort.h`.
-2. Create `src/algorithms/sort.c` and implement insertion sort.
-3. Run `make test`, trace any failing case, and explain the sorted-prefix invariant and complexity.
+1. Create and document `src/diagnostics/log.h`, choosing the smallest concrete configuration API for levels, output, and named channels.
+2. Create `src/diagnostics/log.c` and focused tests for silent-by-default output, filtering, channel independence, formatting, and redirection.
+3. Instrument binary search and `VectorI32`, then compare one emitted trace from each with a hand trace.
 
-After those pass, request review. The merge-sort tests and detailed implementation lesson should be activated only then.
+After those pass, request review. Do not implement insertion sort or later logging features such as environment parsing, timestamps, or thread synchronization yet.

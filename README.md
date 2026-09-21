@@ -13,6 +13,7 @@ codebase/
         algorithms/
         text/
         io/
+        diagnostics/
         platform/
     tests/                      // contains tests
     examples/                   // demonstrates individual modules
@@ -36,15 +37,17 @@ Conventions:
 
 Owning structs must not be casually copied by assignment: that can create two apparent owners of one allocation
 
-1. string, array, memory [pointers, arrays, allocation]
-2. vec, list, stack, queue [data structures, ownership]
-3. hashmap, hashset [hashing, collisions, resizing]
-4. arena, pool [memory management]
-5. file, path [OS/file system interaction]
-6. log [variadic functions, formatting]
+1. log and named traces [variadic functions, formatting, observable execution]
+2. string, array, memory [pointers, arrays, allocation]
+3. vec, list, stack, queue [data structures, ownership]
+4. hashmap, hashset [hashing, collisions, resizing]
+5. arena, pool [memory management]
+6. file, path [OS/file system interaction]
 7. thread, mutex [concurrency]
 8. socket [networking]
 9. algorithms [sorting, searching]
+
+Logging is mandatory infrastructure. Applicable data structures and algorithms expose a disabled-by-default named trace channel, such as `binary-search-trace` or `vectorI32-trace`, so their internal decisions can be observed while learning.
 
 Naming conventions
 - lowercase aliases for fundamental types

@@ -10,10 +10,10 @@ Do not provide a finished implementation, replacement function, patch, or direct
 
 ## Before reviewing
 
-1. Read `tmp.md` completely.
+1. Read `PLAN.md` completely.
 2. Identify the single milestone marked **active**.
 3. Read that milestone's goal, concepts, required tests, and acceptance criteria.
-4. Read `test.md` and the relevant tests.
+4. Read `TEST.md` and the relevant tests.
 5. Inspect `git status` and the diff without discarding unrelated changes.
 6. Read the complete changed files and their public dependencies.
 7. Run only the smallest relevant build, test, or sanitizer command.
@@ -82,14 +82,14 @@ Do not reject a clear introductory implementation merely because a more advanced
 
 Check that tests:
 
-- cover required behavior from `tmp.md`;
+- cover required behavior from `PLAN.md`;
 - verify useful properties rather than implementation details;
 - would fail for plausible broken implementations;
 - remain deterministic;
 - clean up resources;
 - do not themselves invoke undefined behavior.
 
-Passing supplied tests is necessary but not sufficient. Mention missing cases without writing the complete test unless the learner asks the AI to update tests under `test.md`.
+Passing supplied tests is necessary but not sufficient. Mention missing cases without writing the complete test unless the learner asks the AI to update tests under `TEST.md`.
 
 ### 6. Understanding
 
@@ -180,5 +180,5 @@ When the milestone passes:
 - summarize what the learner built;
 - name the concepts demonstrated;
 - suggest a focused commit, but do not commit;
-- state that `tmp.md` can now activate the next milestone;
+- state that `PLAN.md` can now activate the next milestone;
 - do not begin implementing that next milestone.
