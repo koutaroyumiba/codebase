@@ -44,13 +44,13 @@ static OptionUsize find_channel_index(const char *channel) {
 static const char *level_name(LogLevel level) {
   switch (level) {
   case LL_DEBUG:
-    return " DEBUG ";
+    return "DEBUG";
   case LL_INFO:
-    return " INFO  ";
+    return "INFO";
   case LL_WARNING:
     return "WARNING";
   case LL_ERROR:
-    return " ERROR ";
+    return "ERROR";
   case LL_DISABLE:
     break;
   }
@@ -148,7 +148,7 @@ void log_channel(const char *channel, const char *format, ...) {
 
   FILE *output = current_output();
 
-  fprintf(output, "[%s] ", channel);
+  fprintf(output, "[TRACE] [%s] ", channel);
   va_list arguments;
   va_start(arguments, format);
   vfprintf(output, format, arguments);

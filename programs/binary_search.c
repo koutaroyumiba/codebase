@@ -4,6 +4,7 @@
 int main() {
   const i32 values[] = {1, 3, 5, 7, 9};
   log_reset();
+  log_set_output(stdout);
   log_set_level(LL_INFO);
 
   if (!log_enable_channel("binary-search")) {
