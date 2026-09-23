@@ -6,10 +6,12 @@
 /* channel for logs */
 extern const char INSERTION_SORT_CHANNEL[];
 
-/* - sorted-prefix loop invariant
- * - in-place mutation
+/* - data must not be nullptr when len > 0
+ * - output is sorted in ascending order
+ * - mutation occurs in-place
  * - stable sorting
- * - unsigned indexes
+ * - the caller retains ownership of *data
+ * - does not retain the pointer or allocate memory
  *
  * > Time: best: O(n) | average/worst: O(n^2)
  * > Space: O(1)
