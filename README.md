@@ -2,6 +2,12 @@
 
 Mainly made to use as few libraries as possible and for my own learning and exploration purposes.
 
+## Platform assumptions
+
+This project targets conventional C23 platforms rather than every conforming C implementation. Fundamental integer aliases use deliberately selected built-in C types, with compile-time assertions rejecting platforms where those types have the wrong width. In particular, `i32` is `int` and `u32` is `unsigned int`, and both are required to be 32 bits. This keeps ordinary formatting predictable: use `%d` for `i32` and `%u` for `u32`.
+
+Supporting a platform with different fundamental type widths requires revisiting the aliases and their formatting conventions; it is not handled silently.
+
 ## What does this codebase have?
 
 ```

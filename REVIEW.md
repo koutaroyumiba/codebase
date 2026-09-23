@@ -70,7 +70,8 @@ Look for:
 - integer overflow that can lead to undersized allocation;
 - misuse of `realloc`;
 - assertion side effects;
-- undefined or implementation-defined behavior.
+- undefined or implementation-defined behavior;
+- variadic format conversions that do not match the aliases' documented built-in types. Follow the project's asserted platform model—for example, `i32` is a 32-bit `int` and uses `%d`—rather than requiring `inttypes.h` macros for aliases whose underlying type is fixed by project policy.
 
 ### 4. Complexity
 

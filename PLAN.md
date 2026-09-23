@@ -132,6 +132,15 @@ Naming conventions already established by the repository:
 
 Use `assert` for programmer errors such as violating a documented precondition. Return an error for normal runtime failures such as allocation failure, malformed input, or a missing file.
 
+### Platform and integer conventions
+
+This curriculum targets conventional C23 platforms and makes its requirements executable with compile-time assertions. Fundamental integer aliases deliberately use built-in C types whose widths are asserted rather than selecting an implementation-dependent underlying type through `intN_t`. In particular:
+
+- `i32` is `int`, which must be 32 bits and uses `%d` in formatted output;
+- `u32` is `unsigned int`, which must be 32 bits and uses `%u` in formatted output.
+
+Apply the same principle deliberately when defining other aliases: choose their underlying built-in type, assert the required width, and use the matching format conversion. A platform that does not satisfy those requirements is unsupported and must fail at compile time rather than silently changing an alias's underlying type.
+
 ### Build progression
 
 Keep the current build simple. Add these targets only when needed:
@@ -1590,12 +1599,12 @@ This order is allowed to change when a real program exposes a better dependency 
 
 # Current checkpoint
 
-Work only on the **Foundation milestone: logging and named tracing** now. Insertion sort remains Milestone 1 and resumes after the logging foundation passes review.
+Work only on **Milestone 1: insertion sort** now. The logging foundation is complete enough to support this milestone.
 
-The next three actions are:
+The next actions are:
 
-1. Create and document `src/diagnostics/log.h`, choosing the smallest concrete configuration API for levels, output, and named channels.
-2. Create `src/diagnostics/log.c` and focused tests for silent-by-default output, filtering, channel independence, formatting, and redirection.
-3. Instrument binary search and `VectorI32`, then compare one emitted trace from each with a hand trace.
+1. Finish the public contract and portable-within-project trace formatting for `insertion_sort_i32`.
+2. Ensure its trace exposes comparisons, decisions, and the sorted-prefix boundary clearly enough to compare with a hand trace.
+3. Run the focused tests and sanitizer checks, then request re-review.
 
-After those pass, request review. Do not implement insertion sort or later logging features such as environment parsing, timestamps, or thread synchronization yet.
+Do not begin merge sort or unrelated base modules until insertion sort passes review.

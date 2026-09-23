@@ -58,6 +58,7 @@ Follow the repository's C23 style and existing names:
 - return `true` on success and `false` on a failed check;
 - use the existing `CHECK` mechanism unless test infrastructure is the active lesson;
 - use `usize`, `i32`, and other project types consistently;
+- match variadic format conversions to the aliases' documented built-in types (`%d` for `i32`, `%u` for `u32`, and `%zu` for `usize`);
 - name tests `test_<module>_<behavior>`;
 - register every test with a descriptive display name;
 - keep each test focused on one behavior category;
