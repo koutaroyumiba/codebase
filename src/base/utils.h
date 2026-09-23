@@ -1,6 +1,20 @@
 #ifndef CB_BASE_UTILS_H
 #define CB_BASE_UTILS_H
 
+#include <stdio.h>
+
+#define Statement(s)                                                           \
+  do {                                                                         \
+    s                                                                          \
+  } while (0)
+
+#define Unreachable                                                            \
+  Statement(                                                                   \
+      fprintf(stderr,                                                          \
+              "[UNREACHABLE] %s:%d: unreachable - How did we get here?\n",     \
+              __FILE__, __LINE__);                                             \
+      fflush(stderr);)
+
 #define ArrayLen(array) (sizeof(array) / sizeof(*(array)))
 
 /* not recommended to have these but...
