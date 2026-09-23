@@ -14,7 +14,7 @@
 typedef enum {
   LL_DEBUG,
   LL_INFO,
-  LL_WARNING,
+  LL_WARN,
   LL_ERROR,
   LL_DISABLE,
 } LogLevel;
