@@ -2,7 +2,11 @@
 
 static bool run_test(const char *name, TestFn test) {
   bool passed = test();
-  printf("[  %s  ] %s\n", passed ? "PASS" : "FAIL", name);
+  if (passed) {
+    printf("[ PASS   ] %s\n", name);
+  } else {
+    printf("[   FAIL ] %s\n", name);
+  }
   return passed;
 }
 
