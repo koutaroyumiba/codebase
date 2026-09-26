@@ -1,1610 +1,498 @@
-# Codebase: bottom-up C, data structures, and algorithms curriculum
+# Codebase: Zig-first DSA visualizer with focused C systems labs
 
-This repository is a long-running learning project. The goal is not to finish a general-purpose library quickly. The goal is to build increasingly capable programs while learning how their foundations work.
+This repository is a learning project for data structures, algorithms, computer-science concepts, visualization, low-level memory, and language interoperability.
 
-Build one milestone at a time. Do not implement later milestones early, and do not generalize a concrete implementation until a second use case exposes useful repetition.
+Zig is the primary implementation language. C is used for focused low-level exercises where manual representation, allocation, ABI design, or platform interaction is itself the lesson. The C work is not required by the normal Zig build.
 
----
-
-## 1. Learning workflow
-
-For every milestone:
-
-1. Read the public behavior and predict important edge cases.
-2. Add or enable only that milestone's tests.
-3. Run the tests and observe the expected failure (**red**).
-4. Implement the smallest understandable solution yourself.
-5. Run tests until they pass (**green**).
-6. Enable the module's trace channel and inspect at least one execution.
-7. Trace the same example by hand and compare it with the emitted events.
-8. Explain ownership, invariants, failure behavior, and complexity.
-9. Request review before moving forward.
-
-The agent may supply tests and review code, but you should write the implementation. Tests for distant milestones should not be added to the build early: their missing symbols would prevent current tests from running, and their APIs may change based on what earlier programs teach us.
-
-### Definition of done for a module
-
-A reusable module is done when it has:
-
-- a focused public header;
-- documented preconditions and postconditions;
-- explicit ownership and pointer-lifetime rules;
-- defined failure behavior;
-- tests for normal behavior and meaningful edge cases;
-- time and space complexity notes where relevant;
-- a named trace channel for meaningful internal state transitions, unless the module has no useful internal behavior to expose;
-- tracing that is silent by default and does not change results, ownership, or failure behavior;
-- a small example or use in a real program;
-- passing `make test` and sanitizer checks when available.
+The previous C-only curriculum is preserved in `PLAN_C_LEGACY.md` for reference.
 
 ---
 
-## 2. Current repository
+## 1. Project goals
+
+1. Implement data structures and algorithms rather than hiding them behind standard containers.
+2. Make internal decisions observable through deterministic structured events.
+3. Build a terminal visualizer quickly, followed by a deliberately small graphical frontend.
+4. Use Zig for the main application, algorithms, collections, and visualization.
+5. Use C for selected systems-programming labs.
+6. Optionally integrate stable C labs into Zig through FFI.
+7. Keep ownership, failure behavior, invariants, and complexity explicit in both languages.
+
+The goal is not to duplicate the complete codebase in two languages.
+
+---
+
+## 2. Language and dependency policy
+
+### Zig is primary
+
+Use Zig for:
+
+- searching and sorting;
+- vectors, queues, heaps, maps, trees, and graphs;
+- graph algorithms;
+- structured algorithm events;
+- terminal and graphical visualization;
+- command-line programs;
+- application composition and integration tests.
+
+Standard-library allocators, testing, I/O, and platform facilities may support the work. Do not use a standard collection as the implementation of a collection currently being studied.
+
+### C is a focused learning track
+
+Good C labs include:
+
+- checked allocation-size arithmetic;
+- fixed-buffer arenas;
+- pool allocators;
+- raw dynamic storage as a comparison exercise;
+- borrowed string views and owned byte strings;
+- byte readers/writers;
+- selected platform and ABI experiments.
+
+A C lab must have a concrete learning objective. Do not create a C version merely to keep the languages symmetrical.
+
+### Dependencies
+
+- The default Zig build must not require the C labs.
+- The C labs must build and test independently.
+- FFI integration is opt-in.
+- A graphical dependency requires explicit approval before it is added.
+- Prefer no external dependencies until the terminal visualizer works.
+
+---
+
+## 3. Optional FFI policy
+
+FFI means Zig may call a stable C module through a C-compatible API. It is an optional extension, never a prerequisite for the main algorithms or visualizer.
+
+Conceptual build modes:
+
+```text
+zig build test                 Zig unit and integration tests
+make -C c test                 standalone C lab tests
+zig build test -Dffi=true      optional Zig/C integration tests
+```
+
+The exact Zig build option will be implemented only when the first FFI milestone begins.
+
+### Boundary rules
+
+1. Memory is normally released by the module that allocated it.
+2. Borrowed buffers cross the boundary as a pointer and length with a documented lifetime.
+3. C APIs expose only C-compatible functions, structs, integer types, pointers, lengths, and status values.
+4. Zig slices, error unions, optionals, and generic types do not cross the C ABI directly.
+5. Zig wrappers translate C status values into idiomatic Zig errors and pointer/length pairs into slices where safe.
+6. C must not retain Zig-owned memory unless the API explicitly documents the lifetime.
+7. C failures must not terminate the Zig application.
+8. Each C module passes native C tests before receiving an FFI wrapper.
+9. Optional FFI behavior must be tested against the standalone C behavior.
+10. The normal Zig application remains usable when FFI is disabled.
+
+When a C backend replaces behavior also available in Zig, keep a Zig backend as the default. When a C lab has no production use, expose it only through a focused FFI demo or integration test.
+
+---
+
+## 4. Intended repository structure
+
+Create directories only when their first real module is started.
 
 ```text
 codebase/
-├── Makefile
+├── build.zig
 ├── README.md
-├── tmp.md
+├── PLAN.md
+├── PLAN_C_LEGACY.md
 ├── src/
-│   ├── base/
-│   │   ├── base.h
-│   │   ├── constants.h
-│   │   ├── types.h
-│   │   └── utils.h
-│   ├── collections/
-│   │   ├── vector.h
-│   │   └── vector.c
+│   ├── root.zig
 │   ├── algorithms/
-│   │   ├── search.h
-│   │   └── search.c
-│   └── main.c
+│   ├── collections/
+│   ├── visualization/
+│   ├── render/
+│   ├── platform/
+│   └── programs/
 ├── tests/
-│   └── test_main.c
-└── build/
+├── fixtures/
+└── c/
+    ├── include/codebase/
+    ├── src/
+    ├── tests/
+    └── Makefile
 ```
 
-Already implemented:
-
-- C23 build with warnings enabled;
-- fixed-width integer aliases;
-- a minimal test runner;
-- an owning `VectorI32` with `init`, `deinit`, `reserve`, `push`, `pop`, and `clear`;
-- linear search;
-- binary search.
-
-Do not rewrite working modules just to make them generic. Extend them when a milestone requires it.
+The existing C files remain in place until the Zig foundation is working and a separate migration step is approved. Do not combine repository movement, build replacement, and algorithm ports into one change.
 
 ---
 
-## 3. Architecture and conventions
+## 5. Architecture
 
-### Dependency direction
-
-```text
-Programs
-   ↓
-Algorithms / text / I/O
-   ↓
-Collections / memory / platform
-   ↓
-Base
-   ↓
-C standard library and native OS APIs
-
-All applicable layers ──→ Diagnostics ──→ Base / C standard library
-```
-
-Diagnostics is a cross-cutting dependency: other modules may emit events through it, but it must not depend back on algorithms, collections, or programs. A module only includes what it actually needs. A sorting algorithm may depend directly on `base`; it does not need to pass through `collections`.
-
-### Directory responsibilities
-
-- `src/base/`: types and tiny helpers with almost no project dependencies.
-- `src/collections/`: data structures and their ownership rules.
-- `src/algorithms/`: searching, sorting, and traversal algorithms.
-- `src/memory/`: allocation strategies and checked size calculations.
-- `src/text/`: string views, builders, parsing, and formatting.
-- `src/io/`: portable file and stream operations.
-- `src/diagnostics/`: logging, named trace channels, and diagnostic output policy.
-- `src/platform/`: operating-system-specific implementations.
-- `programs/`: all runnable executables, including small module demonstrations and complete command-line tools. Use descriptive filenames to distinguish demos from full programs.
-- `tests/`: automated behavior tests.
-
-Create a directory only when its first module is started.
-
-### API rules
-
-Every owning API must answer:
-
-1. Who owns allocated memory?
-2. Who releases it?
-3. How long is a returned pointer valid?
-4. Which operations invalidate existing pointers?
-
-Naming conventions already established by the repository:
-
-- `init`: initialize an existing object;
-- `deinit`: release owned resources;
-- `clear`: remove values while retaining reusable storage;
-- a `view`: borrows memory and never frees it;
-- `bool`: success/failure when there is only one useful failure category;
-- an enum: failure result when callers need to distinguish causes.
-
-Use `assert` for programmer errors such as violating a documented precondition. Return an error for normal runtime failures such as allocation failure, malformed input, or a missing file.
-
-### Platform and integer conventions
-
-This curriculum targets conventional C23 platforms and makes its requirements executable with compile-time assertions. Fundamental integer aliases deliberately use built-in C types whose widths are asserted rather than selecting an implementation-dependent underlying type through `intN_t`. In particular:
-
-- `i32` is `int`, which must be 32 bits and uses `%d` in formatted output;
-- `u32` is `unsigned int`, which must be 32 bits and uses `%u` in formatted output.
-
-Apply the same principle deliberately when defining other aliases: choose their underlying built-in type, assert the required width, and use the matching format conversion. A platform that does not satisfy those requirements is unsupported and must fail at compile time rather than silently changing an alias's underlying type.
-
-### Build progression
-
-Keep the current build simple. Add these targets only when needed:
+### Main dependency direction
 
 ```text
-make
-make run
-make test
-make debug
-make release
-make sanitize
-make clean
+Programs / visualizer
+        ↓
+Visualization adapters and replay
+        ↓
+Algorithms and collections
+        ↓
+Small Zig foundations and standard library
 ```
 
-Do not introduce external dependencies or a larger build system unless the project reaches a limitation that can be demonstrated.
+Rendering and platform code may depend on visualization data. Algorithms and collections must not depend on a renderer, window system, terminal control system, or graphical library.
+
+### Observation model
+
+Algorithms may accept an optional borrowed observer that receives structured events. Examples include:
+
+- comparisons and swaps;
+- active indexes and ranges;
+- merge splits and completed ranges;
+- queue frontier changes;
+- heap sift operations;
+- hash probes and collisions;
+- graph visits and edge relaxation.
+
+Requirements:
+
+- ordinary APIs remain available without an observer;
+- observed and unobserved execution produce identical results;
+- events are deterministic for deterministic input;
+- callbacks do not retain borrowed data unless the contract explicitly transfers ownership;
+- observation does not allocate unless an explicit recorder chooses to copy an event;
+- begin with module-specific events instead of one universal event hierarchy.
+
+Text logging remains useful for humans but must not be parsed as the visualizer's data source.
 
 ---
 
-# Foundation milestone — Logging and named tracing (mandatory)
+## 6. Learning workflow
 
-### Goal
+For each milestone:
 
-Build a small logging facility first, then use it throughout the project to make otherwise invisible state changes observable while learning. A caller must be able to enable a channel such as `binary-search-trace` or `vectorI32-trace` and see that module's internal decisions.
+1. Read the contract and predict edge cases.
+2. Add focused tests and observe the initial failure.
+3. Implement the smallest understandable solution.
+4. Run focused tests until they pass.
+5. Inspect structured events or trace a small example by hand.
+6. Explain ownership, invariants, failure behavior, and complexity.
+7. Request review before activating the next milestone.
 
-Logging is cross-cutting infrastructure, not an optional late systems branch. Every later data structure and algorithm must add a useful trace channel as part of its definition of done.
+A reusable module is complete when it has:
 
-### Files to create or change
+- a focused public API;
+- documented preconditions and failure behavior;
+- explicit ownership and borrowing rules;
+- tests for boundaries and representative failures;
+- complexity notes where relevant;
+- useful observation events where internal decisions matter;
+- passing focused tests and applicable safety checks.
 
-- Create `src/diagnostics/log.h`.
-- Create `src/diagnostics/log.c`.
-- Add focused tests to `tests/test_main.c`.
-- Instrument `src/algorithms/search.c` with `linear-search-trace` and `binary-search-trace`.
-- Instrument `src/collections/vector.c` with `vectorI32-trace`.
-- Add a small example showing how callers enable one or more channels.
+---
 
-### Smallest useful design
+# Roadmap
 
-Start concrete rather than building a general observability framework:
+This roadmap retains every numbered milestone from the original plan. `PLAN_C_LEGACY.md` remains the detailed specification for each original goal, concept list, required test, and acceptance criterion. Unless this plan explicitly changes a language-specific mechanism, those requirements still apply.
 
-- log levels for ordinary messages;
-- independently enabled, named trace channels;
-- formatted output using variadic functions;
-- a configurable output stream, defaulting to standard error;
-- deterministic output by default, with timestamps off;
-- no allocation in the logging path;
-- all levels and channels silent or filtered according to explicit configuration.
+For Zig milestones, translate C-specific API mechanics idiomatically while preserving the learning outcome. For example, pointer/length inputs become slices and return booleans may become error unions. For C milestones, retain the original C ownership and failure requirements.
 
-Channel names are part of the learning interface. Prefer `<module>-trace` names; keep an established public type name when it aids recognition, as in `vectorI32-trace`.
+Visualization milestones are additions. They do not replace or remove original work.
 
-Do not parse environment variables yet. Initially, small programs and tests may enable channels programmatically. Environment or command-line configuration can be added when text parsing and complete programs exist.
+## Phase 0 — Preserve the C checkpoint
 
-### Trace-event rules
+The existing C implementation contains base types, diagnostics, vector operations, searching, insertion sort, and merge sort. Keep it working while establishing Zig. It is a historical and comparative checkpoint, not the architecture of the new primary application.
 
-A useful trace records decisions and state transitions, not merely function entry:
+Do not move or rewrite the existing C tree until the Zig build and first port are working.
 
-- binary search: target, `low`, `high`, `mid`, compared value, chosen half, and final result;
-- vector: operation, length/capacity before and after, growth decision, and success/failure;
-- sorting: current key/range, comparisons or moves, and the invariant boundary;
-- allocating structures: requested size, growth/failure decision, and resulting logical state;
-- traversals: frontier changes, visited nodes, and skipped repeats.
+## Zig bootstrap — before numbered milestones
 
-Do not log raw pointer addresses by default: they make tests nondeterministic and usually teach less than lengths, indexes, capacities, and ownership events. Trace calls must not evaluate state-changing expressions, and logging failure must never change the module's result.
+### Bootstrap A — Build and test skeleton
 
-### Concepts to understand
+- Add `build.zig` and `src/root.zig`.
+- Add one minimal unit test.
+- Establish debug and test commands.
+- Record the Zig version because build APIs can change between releases.
+- Add no third-party packages.
 
-- diagnostic output versus program output;
-- log levels versus named trace channels;
-- variadic functions and `va_list`;
-- global configuration tradeoffs;
-- deterministic tests and output injection;
-- why tracing must be observational rather than behavioral;
-- future thread-safety concerns.
+### Bootstrap B — Existing foundation in Zig
 
-### Build steps
+Port the capabilities that existed before the original numbered roadmap:
 
-1. Define and test configuration, level filtering, channel enable/disable, and output selection.
-2. Add formatted logging and tracing without allocating fixed or dynamic message buffers; write directly to the configured stream.
-3. Add the three initial channels and inspect traces for a tiny binary search and vector growth example.
-4. Document how a caller enables a single channel and how it disables tracing again.
+- deterministic logging and named trace channels;
+- linear search and binary search;
+- an initial concrete `VectorI32` with initialization, cleanup, reserve, push, pop, and clear;
+- ownership, borrowing, failure, and pointer-invalidation documentation.
 
-### Required tests
-
-- disabled channels produce no output;
-- enabling one channel does not enable another;
-- level filtering works at its boundaries;
-- formatted values appear correctly;
-- long messages are not silently truncated;
-- output can be redirected for deterministic capture;
-- timestamps are absent unless explicitly enabled in a later extension;
-- binary-search traces expose each narrowed range and the final found/not-found result;
-- vector traces expose no-growth, growth, empty-pop, and clear paths;
-- enabling or disabling tracing does not change return values or final data-structure state.
-
-### Acceptance criteria
-
-- logging is silent by default;
-- callers can independently toggle `binary-search-trace` and `vectorI32-trace`;
-- diagnostics go to the configured diagnostic destination, never normal program output;
-- no trace path allocates memory or changes control flow outcomes;
-- exact deterministic output can be tested with timestamps disabled;
-- `make test` passes;
-- every later applicable module includes trace events and a short trace exercise before its milestone can pass.
-
-### Optional hints
-
-Keep configuration process-global at first and document that it is not thread-safe. Revisit synchronization only when the threads milestone creates a real need. A `FILE *` destination keeps the first implementation concrete and lets tests capture output without inventing a new I/O abstraction.
+Structured visualization events may share concepts with textual tracing, but the visualizer must not parse log messages.
 
 ---
 
 # Part I — Arrays and fundamental algorithms
 
-These milestones build fluency with contiguous memory, indexes, invariants, and complexity before introducing more pointer-heavy structures.
+## Milestone 1 — Insertion sort — Zig
 
-## Milestone 1 — Insertion sort
+Implement stable in-place insertion sort over an `i32` slice. Preserve the original boundary, ordering, stability, complexity, and trace requirements.
 
-### Goal
+## Milestone 2 — Merge sort — Zig
 
-Sort an `i32` array in ascending order in place.
+Implement stable merge sort with an explicit allocator and one temporary allocation. Allocation or size failure must not corrupt the caller's input.
 
-### Files to create or change
+## Visualization fast lane — additional milestones
 
-- Create `src/algorithms/sort.h`.
-- Create `src/algorithms/sort.c`.
-- Tests already exist in `tests/test_main.c`.
+Complete these after Milestone 2 and before Milestone 3.
 
-### Concepts to understand
+### V1 — Structured sorting and searching events — Zig
 
-- sorted-prefix loop invariant;
-- in-place mutation;
-- stable sorting;
-- unsigned indexes;
-- best-case `O(n)`, average/worst-case `O(n²)`, extra space `O(1)`.
+- Add module-specific events for comparisons, moves, placements, active ranges, splits, merges, and binary-search narrowing.
+- Keep ordinary unobserved APIs.
+- Verify that observed and unobserved runs return identical results.
+- Keep event order deterministic for deterministic input.
 
-### Build steps
+### V2 — Terminal DSA visualizer — Zig
 
-1. Declare `void insertion_sort_i32(i32 *data, usize len)` and document its contract.
-2. Implement the sorted-prefix algorithm without allocation.
-3. Trace mixed, sorted, reverse, and duplicate inputs by hand.
+- Display array state, active indexes or ranges, and the current operation.
+- Support deterministic single-step replay first.
+- Add pause, restart, and speed controls only after stepping works.
+- Keep terminal presentation outside algorithm modules.
 
-### Required tests
+### V3 — Minimal graphical visualizer — Zig
 
-- null pointer with zero length;
-- one element;
-- mixed positive and negative values;
-- duplicates;
-- already sorted input;
-- reverse-sorted input;
-- all-equal input;
-- `I32_MIN` and `I32_MAX`.
+After explicitly approving a graphical dependency, add only frame lifecycle, input, timing, rectangles, lines, text, colors, and basic playback controls. Initially visualize insertion sort, merge sort, and binary search.
 
-### Acceptance criteria
+Do not add a scene graph, ECS, asset pipeline, shader framework, or multiple rendering backends without a demonstrated need.
 
-- `make test` passes;
-- output is nondecreasing and preserves all input values;
-- no allocation occurs;
-- you can explain why shifting on `>` preserves stability.
+## Milestone 3 — Vector insertion and removal — Zig
 
-### Optional hints
+Extend the concrete Zig vector with ordered indexed insertion and removal, preserving overlap safety, failure-state validity, and pointer-invalidation rules.
 
-Save the current value before shifting larger values. Never decrement an unsigned index below zero.
+## Milestone 4 — Number-sorting CLI — Zig
 
-## Milestone 2 — Merge sort (active)
-
-### Goal
-
-Implement a stable `i32` merge sort and compare it with insertion sort.
-
-### Files to create or change
-
-- Change `src/algorithms/sort.h`.
-- Change `src/algorithms/sort.c`.
-- Add merge-sort cases to `tests/test_main.c` when this milestone begins.
-
-### Concepts to understand
-
-- divide and conquer;
-- recursion and base cases;
-- merging two sorted ranges;
-- allocation failure;
-- time `O(n log n)` and extra space `O(n)`.
-
-### Build steps
-
-1. First write a helper that merges two adjacent sorted ranges into temporary storage.
-2. Recursively sort the left and right halves.
-3. Allocate temporary storage once at the public entry point, not once per recursive call.
-4. Return `bool` so allocation failure can be reported without corrupting input.
-
-### Required tests
-
-Reuse all insertion-sort inputs, then add:
-
-- lengths immediately below and above powers of two;
-- a larger deterministic input;
-- allocation-size overflow rejection before reading or modifying the input;
-- allocation failure leaving the caller's array valid (verify by inspection now; add deterministic failure injection in Milestone 13).
-
-### Acceptance criteria
-
-- result matches insertion sort or `qsort` on deterministic inputs;
-- duplicate values are handled correctly;
-- temporary memory is always freed;
-- failure behavior is documented;
-- you can draw the recursive split/merge tree for eight values.
-
-### Optional hints
-
-Use half-open ranges `[begin, end)`. They make lengths and empty ranges easier to calculate.
-
-## Milestone 3 — Vector insertion and removal
-
-### Goal
-
-Add indexed insertion and removal to `VectorI32`.
-
-### Files to create or change
-
-- Change `src/collections/vector.h`.
-- Change `src/collections/vector.c`.
-- Add tests to `tests/test_main.c`.
-
-### Concepts to understand
-
-- moving overlapping memory;
-- index preconditions;
-- growth invalidating pointers;
-- ordered removal versus swap removal;
-- operation cost `O(n)`.
-
-### Build steps
-
-1. Add ordered insertion at indexes from zero through `len`.
-2. Add ordered removal for indexes below `len`.
-3. Return the removed value using the existing option style.
-4. Consider swap removal only as a later, separately named operation.
-
-### Required tests
-
-- insert into an empty vector;
-- insert at front, middle, and end;
-- insertion that triggers growth;
-- remove front, middle, and final element;
-- preserved order;
-- repeated insertion/removal;
-- invalid indexes follow the documented assertion contract.
-
-### Acceptance criteria
-
-- `len <= cap` always holds;
-- insertion failure leaves the vector unchanged;
-- moved ranges do not corrupt overlapping elements;
-- ownership behavior remains unchanged.
-
-### Optional hints
-
-Read the contract of `memmove`; unlike `memcpy`, it supports overlapping ranges.
-
-## Milestone 4 — Number-sorting CLI
-
-### Goal
-
-Build the first complete program: read integers from command-line arguments, sort them, and print them.
-
-### Files to create or change
-
-- Create `programs/sort_numbers.c`.
-- Change `Makefile` to add a focused program target.
-- Add a CLI test script or C integration test under `tests/`.
-
-### Concepts to understand
-
-- `argc` and `argv`;
-- text-to-integer conversion;
-- malformed input and range errors;
-- composing vector and sorting modules;
-- process exit status.
-
-### Required tests
-
-- no numbers;
-- one number;
-- mixed numbers and duplicates;
-- malformed text;
-- values outside the `i32` range;
-- output formatting;
-- nonzero status on invalid input.
-
-### Acceptance criteria
-
-- the program does not leak on any exit path;
-- valid values print in ascending order;
-- invalid input produces a useful error on standard error;
-- modules are reused rather than duplicated in the program.
-
-### Optional hints
-
-Start with standard conversion facilities. Reimplement integer parsing later, after behavior is understood.
+Build the original complete sorting program with parsing, range errors, process status, cleanup, and reusable modules. It may optionally launch or feed the visualizer.
 
 ---
 
-# Part II — Core collections
-
-Build representations in increasing order of pointer and invariant complexity.
+# Part II — Core collections — Zig
 
 ## Milestone 5 — Stack
 
-### Goal
-
-Expose clear last-in, first-out operations using vector storage.
-
-### Files to create or change
-
-- Initially add documentation/example code using `VectorI32` directly.
-- Add `src/collections/stack.h/.c` only if a separate API improves a real caller.
-- Add tests when the API exists.
-
-### Concepts to understand
-
-- LIFO behavior;
-- abstraction versus representation;
-- reusing `push` and `pop`;
-- `O(1)` amortized push and `O(1)` pop.
-
-### Required tests
-
-- empty pop;
-- one item;
-- several pushes followed by reverse-order pops;
-- clear and reuse;
-- growth through the underlying vector.
-
-### Acceptance criteria
-
-- no duplicate dynamic-array implementation;
-- ownership is explicit;
-- an expression-evaluator milestone can use the interface naturally.
-
-### Optional hints
-
-A data structure can be an API convention over an existing representation.
+Expose a clear LIFO interface using vector storage without duplicating the dynamic-array implementation.
 
 ## Milestone 6 — Ring-buffer queue
 
-### Goal
-
-Implement a growable first-in, first-out queue of `i32` values.
-
-### Files to create or change
-
-- Create `src/collections/queue.h`.
-- Create `src/collections/queue.c`.
-- Add queue tests.
-
-### Concepts to understand
-
-- FIFO behavior;
-- head, length, and capacity invariants;
-- wraparound indexing;
-- growing wrapped data into a contiguous new buffer;
-- amortized `O(1)` enqueue and `O(1)` dequeue.
-
-### Required tests
-
-- empty dequeue;
-- enqueue/dequeue one value;
-- FIFO order;
-- wraparound without growth;
-- growth while wrapped;
-- fill, drain, and reuse;
-- overflow and allocation failure preserving validity.
-
-### Acceptance criteria
-
-- logical order is independent of physical layout;
-- indexes never exceed capacity;
-- growth preserves order;
-- all memory is released by `deinit`.
-
-### Optional hints
-
-Store `head` and `len`; derive the insertion index from them instead of maintaining several redundant fields.
+Implement a growable FIFO queue with wraparound, growth while wrapped, and explicit head/length/capacity invariants. Add events that can visualize logical and physical layout.
 
 ## Milestone 7 — Singly linked list
 
-### Goal
-
-Implement a singly linked list of `i32` values with front operations and traversal.
-
-### Files to create or change
-
-- Create `src/collections/list.h`.
-- Create `src/collections/list.c`.
-- Add list tests.
-
-### Concepts to understand
-
-- nodes and links;
-- heap ownership per node;
-- pointer-to-pointer manipulation;
-- contiguous versus noncontiguous storage;
-- `O(1)` front insertion and `O(n)` indexed access.
-
-### Required tests
-
-- empty list;
-- push/remove front;
-- traversal order;
-- remove middle and absent value;
-- clear and reuse;
-- allocation failure;
-- cleanup of every node.
-
-### Acceptance criteria
-
-- no node is leaked or freed twice;
-- head/tail invariants are documented if a tail is stored;
-- failed insertion leaves the list unchanged;
-- you can compare list and vector cache behavior conceptually.
-
-### Optional hints
-
-Begin with only a head pointer. Add a tail only when an operation needs it.
+Implement node ownership, front operations, traversal, removal, allocation failure, and complete cleanup. Compare noncontiguous storage with vectors.
 
 ## Milestone 8 — Binary heap / priority queue
 
-### Goal
-
-Implement a min-heap of `i32` values backed by a vector-like array.
-
-### Files to create or change
-
-- Create `src/collections/heap.h`.
-- Create `src/collections/heap.c`.
-- Add heap tests.
-
-### Concepts to understand
-
-- complete binary trees in arrays;
-- parent and child index calculations;
-- heap ordering invariant;
-- sift-up and sift-down;
-- `O(log n)` insertion/removal and `O(1)` minimum lookup.
-
-### Required tests
-
-- empty peek/pop;
-- one value;
-- ascending, descending, and duplicate insertions;
-- repeated pop produces sorted order;
-- growth;
-- index calculations near boundaries.
-
-### Acceptance criteria
-
-- every parent is no larger than its children;
-- pop repairs the invariant;
-- duplicates are retained;
-- memory and failure rules are documented.
-
-### Optional hints
-
-Write the parent/child formulas on paper and check them for indexes zero through six before coding.
+Implement a vector-backed `i32` min-heap with sift-up and sift-down. Visualize both array and tree representations.
 
 ## Milestone 9 — Hash map
 
-### Goal
-
-Implement a concrete `i32`-to-`i32` hash map before attempting generic or string-keyed maps.
-
-### Files to create or change
-
-- Create `src/collections/i32_map.h/.c`.
-- Add map tests.
-
-### Concepts to understand
-
-- hash functions;
-- load factor;
-- collisions;
-- open addressing or separate chaining;
-- deletion markers;
-- resizing.
-
-### Required tests
-
-- empty lookup;
-- insert and retrieve;
-- overwrite/update;
-- negative and extreme keys;
-- deliberate collisions;
-- resize with all entries preserved;
-- deletion and reinsertion;
-- missing key;
-- allocation failure.
-
-### Acceptance criteria
-
-- collision handling is correct;
-- resizing preserves every entry;
-- average expected lookup is documented as `O(1)` and worst case as `O(n)`;
-- the empty-slot and deleted-slot representations cannot be confused with valid keys.
-
-### Optional hints
-
-Choose one collision strategy and learn it thoroughly. Add string-view keys later, after string lifetimes are understood; do not make the map generic yet.
+Implement a concrete `i32`-to-`i32` map with collision handling, deletion, resizing, and explicit empty/deleted slot representation. Add probe, collision, and resize events.
 
 ## Milestone 10 — Bitset
 
-### Goal
-
-Store boolean membership compactly in machine words.
-
-### Files to create or change
-
-- Create `src/collections/bitset.h/.c`.
-- Add bitset tests.
-
-### Concepts to understand
-
-- bits, bytes, and words;
-- masks and shifts;
-- set, clear, toggle, and test;
-- rounding bit counts to storage words.
-
-### Required tests
-
-- zero bits;
-- first and last valid bit;
-- indexes around word boundaries;
-- set/clear/toggle;
-- all bits operations if implemented;
-- allocation-size overflow.
-
-### Acceptance criteria
-
-- unrelated bits do not change;
-- padding bits are handled consistently;
-- out-of-range behavior is documented;
-- storage size calculations cannot overflow.
-
-### Optional hints
-
-Derive a word index and an offset within that word separately.
+Implement compact boolean membership with correct masks, shifts, word-boundary behavior, padding policy, and safe storage calculations.
 
 ---
 
-# Part III — Memory management
+# Part III — Memory management — C
 
-Do this after several allocating structures have exposed repeated problems. Memory utilities support modules; they are not a prerequisite for learning every collection.
+These are standalone C labs with native C tests. They do not become default dependencies of the Zig application.
 
 ## Milestone 11 — Checked size arithmetic
 
-### Goal
-
-Centralize safe addition and multiplication for allocation sizes.
-
-### Files to create or change
-
-- Create `src/memory/checked.h/.c`, or keep tiny typed helpers in `base` if no runtime dependency is needed.
-- Refactor one existing allocator call at a time.
-- Add focused tests.
-
-### Concepts to understand
-
-- unsigned overflow;
-- prechecking before multiplication/addition;
-- why wrapped allocation sizes can cause buffer overflow.
-
-### Required tests
-
-- zero operands;
-- ordinary values;
-- exact maximum representable result;
-- one-past-maximum failure;
-- output parameter unchanged on failure.
-
-### Acceptance criteria
-
-- no overflowing operation is performed before checking it;
-- vector, queue, and later allocators can reuse the helpers;
-- behavior is independent of a specific pointer width.
-
-### Optional hints
-
-For multiplication, handle zero and compare one operand with `SIZE_MAX / other` before multiplying.
+Implement reusable overflow-safe addition and multiplication for allocation sizes. Preserve unchanged output on failure and pointer-width independence.
 
 ## Milestone 12 — Fixed-buffer arena
 
-### Goal
-
-Allocate aligned regions from a caller-supplied buffer and release them together with `reset`.
-
-### Files to create or change
-
-- Create `src/memory/arena.h`.
-- Create `src/memory/arena.c`.
-- Add arena tests.
-
-### Concepts to understand
-
-- alignment;
-- cursor/bump allocation;
-- borrowed backing storage;
-- grouped lifetimes;
-- exhaustion and reset;
-- no individual free.
-
-### Required tests
-
-- zero-sized or empty backing buffer;
-- sequential allocations;
-- requested alignments;
-- exact exhaustion and one byte too many;
-- arithmetic overflow;
-- failed allocation leaves cursor unchanged;
-- reset reuses storage;
-- earlier pointers become logically invalid after reset/reuse.
-
-### Acceptance criteria
-
-- returned addresses satisfy supported alignment;
-- arena never writes outside the backing buffer;
-- reset does not free caller-owned memory;
-- behavior for zero-size allocation is defined.
-
-### Optional hints
-
-First implement alignment for powers of two and assert that precondition.
+Implement aligned bump allocation over caller-owned storage, exhaustion, reset, and grouped-lifetime rules. Failed allocation must leave the cursor unchanged.
 
 ## Milestone 13 — Allocation interface and failure injection
 
-### Goal
-
-Allow selected collections to allocate through a small interface so tests can deterministically simulate failures.
-
-### Files to create or change
-
-- Create `src/memory/allocator.h/.c`.
-- Add a test allocator under `tests/`.
-- Adapt one collection before adapting others.
-
-### Concepts to understand
-
-- function pointers and context pointers;
-- dependency injection;
-- realloc semantics;
-- allocator capability mismatch;
-- deterministic failure testing.
-
-### Required tests
-
-- normal heap allocation;
-- fail on the first and later allocation calls;
-- collection remains valid after failure;
-- no leaked successful allocations;
-- unsupported arena-style operations are not silently treated as heap operations.
-
-### Acceptance criteria
-
-- the interface documents allocate/resize/free capabilities;
-- heap and arena differences remain explicit;
-- collection failure paths become testable without requesting enormous real allocations.
-
-### Optional hints
-
-Do not force a simple arena to pretend it supports individual frees. Design from actual caller needs.
+Implement a small C allocation interface with explicit allocate/resize/free capabilities and a deterministic failure-injection allocator. Adapt at least one C structure so failure-state validity and leak freedom can be tested.
 
 ## Milestone 14 — Pool allocator
 
-### Goal
-
-Allocate and recycle many fixed-size objects efficiently.
-
-### Files to create or change
-
-- Create `src/memory/pool.h/.c`.
-- Add pool tests.
-
-### Concepts to understand
-
-- free lists;
-- fixed-size slots;
-- alignment;
-- object lifetime and double-free hazards.
-
-### Required tests
-
-- allocate until full;
-- free and reuse a slot;
-- alignment;
-- reject or assert foreign pointers;
-- reset behavior;
-- no duplicate live allocation of one slot.
-
-### Acceptance criteria
-
-- every slot is either live or in the free list, never both;
-- operations are `O(1)`;
-- supported object size/alignment are documented.
-
-### Optional hints
-
-The bytes of a free slot can store the link to the next free slot if the slot is large and aligned enough.
+Implement aligned fixed-size slots, a free list, reuse, reset behavior, and protection or documented assertions for invalid and duplicate release.
 
 ---
 
 # Part IV — Text, parsing, and binary data
 
-Keep byte-oriented text separate from full Unicode processing. These milestones initially operate on bytes and ASCII-aware rules.
+## Milestone 15 — String view — C
 
-## Milestone 15 — String view
+Implement a borrowed pointer/length byte view with construction, equality, prefix/suffix checks, slicing, find, and ASCII trimming. It never owns or frees backing memory.
 
-### Goal
+## Milestone 16 — String builder — C
 
-Represent borrowed text as a pointer and length without requiring null termination.
+Implement an owning growable null-terminated byte string with explicit length/capacity rules, overlap policy, allocation failure safety, and pointer invalidation documentation.
 
-### Files to create or change
+## Milestone 17 — Integer parsing and formatting — Zig
 
-- Create `src/text/string_view.h/.c`.
-- Add string-view tests.
+Implement decimal `i32` parsing and formatting without delegating the core conversion to a standard convenience parser. Preserve malformed/range distinctions, boundary handling, partial-input policy, and round-trip tests.
 
-### Concepts to understand
+The Zig sorting CLI uses this Zig implementation by default; it does not require the C string labs.
 
-- borrowed memory;
-- pointer plus length;
-- slices and half-open ranges;
-- null-terminated strings versus arbitrary byte spans;
-- lifetime dependency on backing storage.
+## Milestone 18 — Byte reader and writer — C
 
-### Operations
+Implement bounded cursor-based fixed-width integer encoding with explicit endianness, no unaligned integer casts, and unchanged cursors on failure.
 
-- construct from pointer/length and C string;
-- equality;
-- prefix and suffix checks;
-- slicing;
-- find;
-- ASCII whitespace trimming.
-
-### Required tests
-
-- empty view;
-- equal and unequal views;
-- embedded null bytes for length-based operations;
-- prefix/suffix at exact length;
-- valid empty slices at boundaries;
-- missing search value;
-- trimming empty/all-whitespace/mixed input;
-- no operation reads beyond `len`.
-
-### Acceptance criteria
-
-- views never free memory;
-- returned subviews point into the original storage;
-- no function assumes null termination unless named/documented to do so;
-- lifetime rules are documented.
-
-### Optional hints
-
-Implement equality before searching or splitting. Keep constructors separate from operations.
-
-## Milestone 16 — String builder
-
-### Goal
-
-Build an owning, growable, null-terminated byte string.
-
-### Files to create or change
-
-- Create `src/text/string_builder.h/.c`.
-- Add builder tests.
-
-### Concepts to understand
-
-- logical length versus capacity;
-- trailing null terminator;
-- append growth;
-- exposing borrowed pointers;
-- self-append and overlapping input.
-
-### Required tests
-
-- empty builder exposes an empty C string;
-- append character and view;
-- repeated growth;
-- terminator exists after every success;
-- clear and reuse;
-- allocation failure preserves validity;
-- append containing embedded null if supported;
-- overlapping/self-append behavior is defined.
-
-### Acceptance criteria
-
-- `len` excludes the terminator;
-- capacity rules clearly state whether terminator space is included;
-- `data[len] == '\0'` after successful operations;
-- growth may invalidate exposed pointers and is documented.
-
-### Optional hints
-
-Reserve space for content plus one terminator, checking that addition for overflow.
-
-## Milestone 17 — Integer parsing and formatting
-
-### Goal
-
-Parse decimal `i32` values from string views and format them without relying on `atoi`.
-
-### Files to create or change
-
-- Create `src/text/parse.h/.c`.
-- Create `src/text/format.h/.c` if formatting is kept separate.
-- Add tests.
-
-### Concepts to understand
-
-- validation versus conversion;
-- overflow before multiply/add;
-- signs and boundaries;
-- returning an error plus consumed length;
-- formatting negative minimum safely.
-
-### Required tests
-
-- zero, positive, and negative values;
-- `I32_MIN` and `I32_MAX`;
-- one beyond each limit;
-- empty input and sign only;
-- invalid character;
-- leading/trailing whitespace policy;
-- partial parse policy;
-- formatting round trip.
-
-### Acceptance criteria
-
-- malformed input is distinguishable from range overflow if callers need it;
-- no signed overflow occurs during parsing or formatting;
-- the sorting CLI can replace standard conversion code with this module.
-
-### Optional hints
-
-Accumulating in a negative range can simplify handling `I32_MIN`, whose positive magnitude is not representable as `i32`.
-
-## Milestone 18 — Byte reader and writer
-
-### Goal
-
-Read and write fixed-width integers from byte buffers with explicit endianness.
-
-### Files to create or change
-
-- Create `src/io/byte_reader.h/.c`.
-- Create `src/io/byte_writer.h/.c`.
-- Add tests.
-
-### Concepts to understand
-
-- endianness;
-- byte shifts and masks;
-- cursor-based parsing;
-- unaligned access;
-- bounds checking.
-
-### Required tests
-
-- little- and big-endian known byte patterns;
-- every supported integer width;
-- exact buffer boundary;
-- truncated input/output;
-- failure leaves cursor unchanged;
-- round-trip encode/decode;
-- values with high bits set.
-
-### Acceptance criteria
-
-- implementation does not depend on host endianness;
-- no out-of-bounds access occurs;
-- failure behavior is consistent across operations.
-
-### Optional hints
-
-Construct integers from individual bytes rather than casting an arbitrary byte pointer to an integer pointer.
+A Zig program that needs byte decoding must have a native Zig path or local implementation so FFI remains optional.
 
 ---
 
-# Part V — Files and operating-system boundaries
-
-Start portable, then isolate platform-specific behavior.
+# Part V — Files and operating-system boundaries — Zig
 
 ## Milestone 19 — Whole-file reading and writing
 
-### Goal
-
-Read an entire file into an owning buffer and write a complete buffer to a file.
-
-### Files to create or change
-
-- Create `src/io/file.h/.c`.
-- Add tests using temporary files under the test environment.
-
-### Concepts to understand
-
-- resource acquisition and cleanup;
-- file sizes versus memory sizes;
-- empty files;
-- partial reads/writes;
-- binary versus text mode;
-- ownership of returned buffers.
-
-### Required tests
-
-- empty file;
-- text and binary data including null bytes;
-- nonexistent file;
-- write then read round trip;
-- file open/read/write failure;
-- configured size limit;
-- all handles and buffers cleaned up on failure.
-
-### Acceptance criteria
-
-- returned buffer ownership is explicit;
-- empty files succeed with a defined representation;
-- partial operations are handled rather than assumed impossible;
-- error categories are useful to callers.
-
-### Optional hints
-
-Use one cleanup path if it makes every acquired resource easy to audit.
+Implement owned whole-file reads and complete writes with empty-file policy, partial-operation handling, size limits, useful errors, and cleanup on every path.
 
 ## Milestone 20 — Directory traversal and paths
 
-### Goal
-
-List directory entries through a small platform-isolated API.
-
-### Files to create or change
-
-- Create a portable declaration in `src/io/` or `src/platform/`.
-- Create the current OS implementation under `src/platform/`.
-- Add filesystem integration tests.
-
-### Concepts to understand
-
-- platform APIs;
-- path separators and special entries;
-- borrowed versus owned entry names;
-- iteration state and cleanup;
-- nondeterministic directory order.
-
-### Required tests
-
-- empty temporary directory;
-- files and subdirectories;
-- nonexistent path;
-- names with spaces;
-- tests do not assume enumeration order;
-- iterator cleanup on early exit.
-
-### Acceptance criteria
-
-- native API details do not leak through unrelated modules;
-- all OS handles are closed;
-- another platform could supply the same public contract later.
-
-### Optional hints
-
-Sort entries in a caller if deterministic display is needed; directory APIs need not promise order.
+Create a small platform-isolated directory API with explicit entry-name lifetimes, nondeterministic ordering policy, and reliable iterator cleanup.
 
 ## Milestone 21 — Timing and benchmarks
 
-### Goal
+Add monotonic timing and responsibly compare insertion sort with merge sort using deterministic inputs, correctness checks, recorded build mode, and repeated measurements.
 
-Add monotonic high-resolution timing and use it to compare sorting algorithms responsibly.
+## Milestone 22 — Memory mapping — optional
 
-### Files to create or change
-
-- Create `src/platform/time.h/.c`.
-- Create `programs/sort_benchmark.c`.
-
-### Concepts to understand
-
-- monotonic versus wall-clock time;
-- debug versus optimized builds;
-- warmup and repeated measurements;
-- benchmark inputs and compiler optimization.
-
-### Required tests
-
-- timestamps are representable and differences are nonnegative in ordinary use;
-- duration conversion uses known synthetic values;
-- benchmark correctness is checked before timing.
-
-### Acceptance criteria
-
-- benchmark records input size, data shape, build flags, and machine;
-- insertion and merge sort outputs are checked for equality;
-- conclusions distinguish asymptotic growth from one noisy timing.
-
-### Optional hints
-
-Generate inputs deterministically so comparisons can be reproduced.
-
-## Milestone 22 — Memory mapping (optional platform milestone)
-
-### Goal
-
-Expose a read-only mapped file as a borrowed byte view.
-
-### Files to create or change
-
-- Create `src/platform/mapped_file.h/.c` for the current OS.
-- Add integration tests.
-
-### Concepts to understand
-
-- virtual memory;
-- page-backed mappings;
-- OS handles;
-- mapping lifetime;
-- empty-file behavior.
-
-### Required tests
-
-- map and inspect a nonempty file;
-- empty file policy;
-- nonexistent file;
-- cleanup;
-- view becomes invalid after unmapping.
-
-### Acceptance criteria
-
-- mapping and file handles are released;
-- lifetime restrictions are prominent;
-- ordinary file reading remains available when ownership is preferable.
+Expose a read-only mapped file as a borrowed byte view with prominent mapping-lifetime and cleanup rules. Keep ordinary owned file reading available.
 
 ---
 
-# Part VI — Trees and graph algorithms
-
-These milestones reuse stacks, queues, heaps, vectors, and bitsets instead of building traversal infrastructure from scratch.
+# Part VI — Trees and graph algorithms — Zig
 
 ## Milestone 23 — Binary search tree
 
-### Goal
-
-Implement a concrete `i32` binary search tree.
-
-### Files to create or change
-
-- Create `src/collections/bst.h/.c`.
-- Add tree tests.
-
-### Concepts to understand
-
-- recursive structure;
-- ordering invariant;
-- duplicate-value policy;
-- insertion, lookup, traversal, and deletion;
-- unbalanced worst case.
-
-### Required tests
-
-- empty tree;
-- root, leaf, and several levels;
-- duplicate policy;
-- inorder traversal is sorted;
-- delete leaf, one-child node, and two-child node;
-- sorted insertion demonstrates degeneration;
-- complete cleanup.
-
-### Acceptance criteria
-
-- every node satisfies the ordering policy;
-- deletion preserves links and frees exactly one node;
-- average versus worst-case complexity is explained.
-
-### Optional hints
-
-Implement lookup and insertion before deletion. Treat deletion as a separate sub-milestone.
+Implement insertion, lookup, traversal, duplicate policy, and deletion for leaf, one-child, and two-child nodes. Visualize structural changes and sorted-input degeneration.
 
 ## Milestone 24 — Graph representation
 
-### Goal
-
-Represent a directed graph using adjacency lists.
-
-### Files to create or change
-
-- Create `src/collections/graph.h/.c`.
-- Add graph tests.
-
-### Concepts to understand
-
-- vertices and edges;
-- adjacency lists;
-- directed versus undirected graphs;
-- weighted versus unweighted edges;
-- graph ownership.
-
-### Required tests
-
-- zero vertices;
-- isolated vertices;
-- directed edge visibility;
-- self-loop and duplicate-edge policy;
-- invalid vertex indexes;
-- growth and cleanup.
-
-### Acceptance criteria
-
-- vertex/edge ownership is explicit;
-- adding an edge cannot leave a partially updated graph on failure;
-- representation cost is explained as `O(V + E)`.
-
-### Optional hints
-
-Start unweighted and directed. Add edge weights only when Dijkstra's milestone begins.
+Implement a directed adjacency-list graph with explicit vertex/edge ownership, invalid-index behavior, duplicate/self-loop policy, and atomic failure behavior.
 
 ## Milestone 25 — Breadth-first and depth-first search
 
-### Goal
-
-Traverse a graph and record visitation order or predecessor relationships.
-
-### Files to create or change
-
-- Create `src/algorithms/graph_search.h/.c`.
-- Add traversal tests.
-
-### Concepts to understand
-
-- visited sets;
-- queue frontier for BFS;
-- stack/recursion frontier for DFS;
-- disconnected components;
-- `O(V + E)` traversal.
-
-### Required tests
-
-- empty graph policy;
-- one vertex;
-- chain, branch, cycle, and disconnected graph;
-- no vertex visited twice;
-- BFS shortest edge-count distances;
-- deterministic order based on adjacency insertion order, if promised.
-
-### Acceptance criteria
-
-- BFS uses the queue and DFS uses a stack or documented recursion;
-- cycles terminate;
-- predecessor data can reconstruct reachable paths.
-
-### Optional hints
-
-Mark a BFS vertex visited when enqueuing it, not when dequeuing it, to avoid duplicate frontier entries.
+Implement queue-based BFS and stack or recursive DFS with visited sets, predecessor data, disconnected-graph behavior, and `O(V + E)` complexity. Emit frontier and visitation events.
 
 ## Milestone 26 — Topological sorting
 
-### Goal
-
-Order a directed acyclic graph so every edge points forward, and detect cycles.
-
-### Files to create or change
-
-- Add to `src/algorithms/graph_search.h/.c` or create a focused module.
-- Add tests.
-
-### Concepts to understand
-
-- directed acyclic graphs;
-- indegree;
-- Kahn's algorithm or DFS finishing order;
-- cycle detection.
-
-### Required tests
-
-- empty graph;
-- single vertex;
-- chain and branching DAG;
-- multiple valid orders checked by edge constraints, not one exact sequence;
-- self-cycle and multi-vertex cycle.
-
-### Acceptance criteria
-
-- every edge precedes its destination in successful output;
-- cyclic input returns an explicit failure;
-- algorithm complexity is `O(V + E)`.
-
-### Optional hints
-
-Tests should validate the ordering property because many DAGs have several correct answers.
+Produce a valid order for DAGs and detect cycles. Tests validate edge constraints rather than requiring one exact valid order.
 
 ## Milestone 27 — Dijkstra's shortest paths
 
-### Goal
-
-Find shortest paths from one source in a graph with nonnegative edge weights.
-
-### Files to create or change
-
-- Extend graph edges with weights deliberately.
-- Create `src/algorithms/shortest_path.h/.c`.
-- Adapt the heap to store distance/vertex entries or build a focused priority queue.
-- Add tests.
-
-### Concepts to understand
-
-- relaxation;
-- tentative distances;
-- greedy selection;
-- stale priority-queue entries;
-- unreachable vertices;
-- overflow in distance addition;
-- nonnegative-weight requirement.
-
-### Required tests
-
-- one vertex;
-- direct and multi-edge shorter paths;
-- unreachable vertex;
-- zero-weight edge;
-- duplicate routes;
-- stale heap entries;
-- distance overflow handling;
-- reject or assert negative weights according to the chosen type/API.
-
-### Acceptance criteria
-
-- distances and predecessors match known examples;
-- unreachable distance has an explicit representation;
-- overflow does not wrap to a falsely short path;
-- limitations are documented.
-
-### Optional hints
-
-A decrease-key heap is not required initially; push the improved pair and ignore stale entries when popped.
+Add nonnegative weighted edges, relaxation, a priority queue, stale-entry handling, unreachable representation, overflow safety, and predecessor-based path reconstruction.
 
 ---
 
-# Part VII — Larger programs
-
-Programs are checkpoints that reveal whether module APIs are genuinely useful.
+# Part VII — Larger programs — Zig
 
 ## Milestone 28 — Word-frequency counter
 
-### Goal
-
-Read a text file, split it into words, count occurrences, and print results.
-
-### Modules exercised
-
-- file reading;
-- string views;
-- parsing/tokenization rules;
-- hash map;
-- vector and sorting.
-
-### Required tests
-
-- empty file;
-- repeated words;
-- punctuation and case policy;
-- final word without newline;
-- long word;
-- binary/null-byte policy;
-- deterministic output ordering;
-- missing file.
-
-### Acceptance criteria
-
-- key lifetime is safe for the map's full use;
-- tokenization policy is written down;
-- counts are correct;
-- output order is deterministic;
-- all resources are cleaned up.
-
-### Optional hints
-
-Borrowing keys from the complete file buffer is safe only while that buffer remains alive and unchanged.
+Read and tokenize a file, count words, define punctuation/case policy, manage key lifetimes safely, and produce deterministic output. Adapt the Zig map for string-view keys when this real use requires it.
 
 ## Milestone 29 — Expression evaluator
 
-### Goal
-
-Tokenize and evaluate arithmetic expressions with parentheses and precedence.
-
-### Modules exercised
-
-- string views;
-- integer parsing;
-- stacks;
-- error reporting;
-- optionally an arena for syntax nodes.
-
-### Required tests
-
-- individual integer;
-- each operator;
-- precedence;
-- parentheses;
-- unary sign policy;
-- whitespace;
-- malformed expressions;
-- division by zero;
-- arithmetic overflow policy.
-
-### Acceptance criteria
-
-- tokenization and evaluation are separate stages;
-- syntax errors identify a useful position;
-- operator precedence is tested rather than assumed;
-- runtime errors are not assertions.
-
-### Optional hints
-
-Start with two operators before implementing a full grammar.
+Separate tokenization from evaluation and implement precedence, parentheses, useful syntax positions, division-by-zero handling, and an explicit arithmetic-overflow policy.
 
 ## Milestone 30 — Pathfinding demo
 
-### Goal
-
-Load or construct a graph, request two vertices, and print a shortest path.
-
-### Modules exercised
-
-- graph;
-- heap;
-- Dijkstra;
-- file/text parsing;
-- vectors and formatting.
-
-### Required tests
-
-- reachable and unreachable destinations;
-- source equals destination;
-- malformed graph input;
-- unknown vertex;
-- known shortest path and total cost;
-- deterministic tie policy if promised.
-
-### Acceptance criteria
-
-- program logic composes modules instead of reimplementing them;
-- path reconstruction uses predecessor data;
-- errors produce nonzero exit status and useful messages.
+Load or construct a graph, request endpoints, run shortest-path search, reconstruct the path, and optionally replay its events in the visualizer.
 
 ## Milestone 31 — Binary-file inspector
 
-### Goal
-
-Display offsets, bytes, and selected decoded integer values from a binary file.
-
-### Modules exercised
-
-- file reading or memory mapping;
-- byte readers;
-- formatting;
-- string builder;
-- CLI parsing.
-
-### Required tests
-
-- empty and short files;
-- known byte pattern;
-- final partial display row;
-- endian decoding;
-- nonexistent file;
-- invalid option.
-
-### Acceptance criteria
-
-- output does not read beyond the file;
-- offsets and bytes are formatted consistently;
-- endian interpretation is explicit.
+Display offsets, bytes, and explicit-endian decoded values without reading beyond the input. Use a native Zig decoding path by default; the C byte reader may be compared through optional FFI.
 
 ---
 
-# Part VIII — Systems-programming branches
+# Part VIII — Systems-programming branches — Zig primary
 
-These come after the core curriculum. Complete them one at a time based on interest, not as prerequisites for earlier work.
+These remain optional branches, as in the original plan. Selected C comparisons may be added when they teach a specific platform or ABI lesson.
 
-## Milestone 32 — Threads and mutexes
+## Milestone 32 — Threads and mutexes — optional
 
-Build a small platform wrapper, then a bounded producer/consumer queue.
+Build a bounded producer/consumer queue and learn data races, mutexes, condition variables, spurious wakeups, shutdown, deterministic coordination, and ownership transfer.
 
-Learn data races, mutual exclusion, condition variables, spurious wakeups, shutdown, and ownership transfer between threads.
+## Milestone 33 — Sockets — optional
 
-Tests should use deterministic coordination where possible and cover queue full/empty waiting, multiple producers/consumers, shutdown, and sanitizer tooling. Do not use timing sleeps as the primary correctness mechanism.
+Build a TCP echo client/server with address handling, byte order, framing, partial send/receive loops, disconnect behavior, and complete cleanup.
 
-## Milestone 33 — Sockets
+## Milestone 34 — Processes — optional
 
-Build a small TCP echo client/server on the current platform.
+Spawn a child process, capture output, inspect exit status, handle missing executables, and avoid pipe deadlocks and inherited-resource leaks.
 
-Learn addresses, byte order, partial send/receive, connection lifecycle, blocking behavior, and protocol framing.
+## Milestone 35 — Second-language implementation and FFI — optional
 
-Tests should cover local loopback communication, empty and large messages, partial-operation loops, disconnects, malformed frames, and cleanup.
+The repository already uses Zig and C, so this milestone becomes a deliberate comparison and interoperability checkpoint rather than a syntax port.
 
-## Milestone 34 — Processes
+Possible independent sub-milestones:
 
-Spawn a child process, capture output, inspect exit status, and handle errors.
+- wrap the C arena in Zig using a Zig-owned borrowed buffer;
+- wrap the C byte string while keeping allocation and release on the C side;
+- compare C and Zig byte readers against shared fixtures;
+- compare selected stable data structures in both languages;
+- document ABI layout, error translation, ownership, and performance tradeoffs.
 
-Learn process creation, inherited resources, pipes, deadlocks from full pipes, and platform differences.
-
-Tests should cover successful and failing commands, stdout/stderr capture, nonzero exit, missing executable, and cleanup.
-
-## Milestone 35 — Second-language implementation
-
-Reimplement selected stable modules in Zig or another language only after their C behavior is well understood.
-
-Start with base types, vector, insertion sort, and tests. Compare safety model, allocation, error handling, generics, and foreign-function boundaries rather than translating syntax line by line.
+Each C module must pass standalone C tests before receiving a Zig wrapper. The default Zig build, algorithms, programs, and visualizer must continue to work with FFI disabled.
 
 ---
 
-# Entire project order at a glance
+# Complete order at a glance
 
-Foundation. Mandatory logging and named trace channels; instrument the existing search and vector modules.
-1. Insertion sort.
-2. Merge sort.
-3. Vector insertion/removal.
-4. Number-sorting CLI.
-5. Stack.
-6. Ring-buffer queue.
-7. Singly linked list.
-8. Binary heap.
-9. Concrete `i32` hash map.
-10. Bitset.
-11. Checked size arithmetic.
-12. Fixed-buffer arena.
-13. Allocation interface and deterministic failure injection.
-14. Pool allocator.
-15. String view.
-16. String builder.
-17. Integer parsing and formatting.
-18. Byte reader/writer.
-19. Whole-file I/O.
-20. Directory traversal.
-21. Timing and sorting benchmarks.
-22. Optional memory mapping.
-23. Binary search tree.
-24. Graph representation.
-25. BFS and DFS.
-26. Topological sort.
-27. Dijkstra's algorithm.
-28. Word-frequency counter, including adaptation of the map for string-view keys.
-29. Expression evaluator.
-30. Pathfinding demo.
-31. Binary-file inspector.
-32. Optional threads and mutexes.
-33. Optional sockets.
-34. Optional processes.
-35. Optional second-language implementation.
+Foundation: Zig build/test skeleton, logging/tracing, search, and initial vector.
 
-This order is allowed to change when a real program exposes a better dependency order. The rule is to keep the next milestone concrete and small, not to predict every future abstraction perfectly.
+1. Insertion sort — Zig.
+2. Merge sort — Zig.
+V1–V3. Structured events, terminal visualizer, graphical visualizer — Zig.
+3. Vector insertion/removal — Zig.
+4. Number-sorting CLI — Zig.
+5. Stack — Zig.
+6. Ring-buffer queue — Zig.
+7. Singly linked list — Zig.
+8. Binary heap — Zig.
+9. Hash map — Zig.
+10. Bitset — Zig.
+11. Checked size arithmetic — C.
+12. Fixed-buffer arena — C.
+13. Allocation interface and failure injection — C.
+14. Pool allocator — C.
+15. String view — C.
+16. String builder — C.
+17. Integer parsing and formatting — Zig.
+18. Byte reader/writer — C.
+19. Whole-file I/O — Zig.
+20. Directory traversal — Zig.
+21. Timing and sorting benchmarks — Zig.
+22. Memory mapping — optional, Zig.
+23. Binary search tree — Zig.
+24. Graph representation — Zig.
+25. BFS and DFS — Zig.
+26. Topological sort — Zig.
+27. Dijkstra's algorithm — Zig.
+28. Word-frequency counter — Zig.
+29. Expression evaluator — Zig.
+30. Pathfinding demo — Zig.
+31. Binary-file inspector — Zig.
+32. Threads and mutexes — optional, Zig primary.
+33. Sockets — optional, Zig primary.
+34. Processes — optional, Zig primary.
+35. Cross-language comparison and FFI — optional.
+
+The order may change when a real program exposes a better dependency order, but a milestone must not disappear when reordered.
 
 ---
 
 # Current checkpoint
 
-Work only on **Milestone 2: merge sort** now. Its tests define the initial red state.
+The active work is **Bootstrap A: Zig build and test skeleton**.
 
-The next actions are:
+Before implementation:
 
-1. Declare `bool merge_sort_i32(i32 *data, usize len)` and document its success, overflow, allocation-failure, ownership, and pointer-lifetime behavior.
-2. Allocate temporary storage once before modifying the input, then implement recursive splitting and stable merging over half-open ranges.
-3. Add useful trace events, run the focused tests and sanitizer checks, and request review.
-
-Deterministic allocation-failure injection remains deferred to Milestone 13. Do not begin vector insertion/removal or unrelated base modules until merge sort passes review.
+1. Confirm and install a Zig toolchain; Zig is not currently available on this machine.
+2. Choose and record the Zig version.
+3. Add only the build skeleton and one test.
+4. Keep the existing C build passing and do not move its source tree yet.
+5. Do not add a graphical dependency yet.
