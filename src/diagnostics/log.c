@@ -47,8 +47,8 @@ static const char *level_name(LogLevel level) {
     return "DEBUG";
   case LL_INFO:
     return "INFO";
-  case LL_WARNING:
-    return "WARNING";
+  case LL_WARN:
+    return "WARN";
   case LL_ERROR:
     return "ERROR";
   case LL_DISABLE:
