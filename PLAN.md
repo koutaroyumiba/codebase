@@ -254,7 +254,7 @@ Keep configuration process-global at first and document that it is not thread-sa
 
 These milestones build fluency with contiguous memory, indexes, invariants, and complexity before introducing more pointer-heavy structures.
 
-## Milestone 1 — Insertion sort (active)
+## Milestone 1 — Insertion sort
 
 ### Goal
 
@@ -302,7 +302,7 @@ Sort an `i32` array in ascending order in place.
 
 Save the current value before shifting larger values. Never decrement an unsigned index below zero.
 
-## Milestone 2 — Merge sort
+## Milestone 2 — Merge sort (active)
 
 ### Goal
 
@@ -335,8 +335,8 @@ Reuse all insertion-sort inputs, then add:
 
 - lengths immediately below and above powers of two;
 - a larger deterministic input;
-- allocation-size overflow rejection if the API permits synthetic huge lengths;
-- allocation failure leaving the caller's array valid.
+- allocation-size overflow rejection before reading or modifying the input;
+- allocation failure leaving the caller's array valid (verify by inspection now; add deterministic failure injection in Milestone 13).
 
 ### Acceptance criteria
 
@@ -1599,12 +1599,12 @@ This order is allowed to change when a real program exposes a better dependency 
 
 # Current checkpoint
 
-Work only on **Milestone 1: insertion sort** now. The logging foundation is complete enough to support this milestone.
+Work only on **Milestone 2: merge sort** now. Its tests define the initial red state.
 
 The next actions are:
 
-1. Finish the public contract and portable-within-project trace formatting for `insertion_sort_i32`.
-2. Ensure its trace exposes comparisons, decisions, and the sorted-prefix boundary clearly enough to compare with a hand trace.
-3. Run the focused tests and sanitizer checks, then request re-review.
+1. Declare `bool merge_sort_i32(i32 *data, usize len)` and document its success, overflow, allocation-failure, ownership, and pointer-lifetime behavior.
+2. Allocate temporary storage once before modifying the input, then implement recursive splitting and stable merging over half-open ranges.
+3. Add useful trace events, run the focused tests and sanitizer checks, and request review.
 
-Do not begin merge sort or unrelated base modules until insertion sort passes review.
+Deterministic allocation-failure injection remains deferred to Milestone 13. Do not begin vector insertion/removal or unrelated base modules until merge sort passes review.

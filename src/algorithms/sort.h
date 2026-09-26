@@ -5,6 +5,7 @@
 
 /* channel for logs */
 extern const char INSERTION_SORT_CHANNEL[];
+extern const char MERGE_SORT_CHANNEL[];
 
 /* - data must not be nullptr when len > 0
  * - output is sorted in ascending order
@@ -17,5 +18,23 @@ extern const char INSERTION_SORT_CHANNEL[];
  * > Space: O(1)
  */
 void insertion_sort_i32(i32 *data, usize len);
+
+/**
+ * - data must not be nullptr when len > 0
+ * - output is sorted in ascending order
+ * - mutation occurs in place
+ * - stable sorting
+ * - the caller retains ownership of *data
+ * - retains no pointer
+ * - frees temp storage before returning
+ * - returns true after successful sorting
+ * - returns false on size overflow or allocation failure
+ * - failure leaves the input unchanged
+ * - allocation occurs once at the public entry point
+ *
+ * > Time: O(n log n)
+ * > Space: O(n)
+ */
+bool merge_sort_i32(i32 *data, usize len);
 
 #endif // CB_ALGORITHMS_SORT_H

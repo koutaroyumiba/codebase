@@ -19,6 +19,10 @@ int main() {
     CBLOG(LL_ERROR, "failed to enable %s trace", INSERTION_SORT_CHANNEL);
     return 1;
   }
+  if (!log_enable_channel(MERGE_SORT_CHANNEL)) {
+    CBLOG(LL_ERROR, "failed to enable %s trace", MERGE_SORT_CHANNEL);
+    return 1;
+  }
 
   /* === PROGRAM === */
   i32 values[] = {3, 5, 7, 1, -4, 6, 7};
@@ -26,6 +30,12 @@ int main() {
   PrintArrayI32(values);
   insertion_sort_i32(values, ArrayLen(values));
   PrintArrayI32(values);
+
+  i32 values2[] = {3, 5, 7, 1, -4, 6, 7};
+
+  PrintArrayI32(values2);
+  merge_sort_i32(values2, ArrayLen(values2));
+  PrintArrayI32(values2);
 
   return 0;
 }
