@@ -41,27 +41,23 @@ A reusable module is done when it has:
 
 ## 2. Current repository
 
+The C track is self-contained under `c/`. Paths in this document are relative to that directory.
+
 ```text
 codebase/
-├── Makefile
-├── README.md
-├── tmp.md
-├── src/
-│   ├── base/
-│   │   ├── base.h
-│   │   ├── constants.h
-│   │   ├── types.h
-│   │   └── utils.h
-│   ├── collections/
-│   │   ├── vector.h
-│   │   └── vector.c
-│   ├── algorithms/
-│   │   ├── search.h
-│   │   └── search.c
-│   └── main.c
-├── tests/
-│   └── test_main.c
-└── build/
+└── c/
+    ├── Makefile
+    ├── README.md
+    ├── PLAN.md
+    ├── src/
+    │   ├── base/
+    │   ├── collections/
+    │   ├── algorithms/
+    │   ├── diagnostics/
+    │   └── main.c
+    ├── programs/
+    ├── tests/
+    └── build/
 ```
 
 Already implemented:
@@ -142,6 +138,8 @@ This curriculum targets conventional C23 platforms and makes its requirements ex
 Apply the same principle deliberately when defining other aliases: choose their underlying built-in type, assert the required width, and use the matching format conversion. A platform that does not satisfy those requirements is unsupported and must fail at compile time rather than silently changing an alias's underlying type.
 
 ### Build progression
+
+Run these commands from `c/`, or use `make -C c <target>` from the repository root.
 
 Keep the current build simple. Add these targets only when needed:
 
@@ -349,37 +347,6 @@ Reuse all insertion-sort inputs, then add:
 ### Optional hints
 
 Use half-open ranges `[begin, end)`. They make lengths and empty ranges easier to calculate.
-
-## Visualization fast lane — after Milestone 2
-
-Build the visualizer as an optional consumer of algorithm events before continuing the collections sequence. Core algorithms must remain usable without diagnostics or rendering.
-
-### V1 — Structured sorting events
-
-Add an optional observer API for insertion sort and merge sort. Events should describe meaningful decisions such as active ranges, comparisons, moves, placements, splits, and completed merges. Keep the existing sorting functions as unobserved convenience entry points.
-
-The observer is borrowed, must not retain borrowed array data after a callback returns, and must not change algorithm results or ownership. Begin with sort-specific event types rather than a universal visualization framework.
-
-### V2 — Terminal sorting visualizer
-
-Create `programs/sort_visualizer_terminal.c` and display array state, active indexes or ranges, and the current operation. Support deterministic single-step replay before adding animation or terminal-control features.
-
-The program may record owned event snapshots for replay, or render synchronously during callbacks. If events are recorded, their ownership and cleanup must be explicit.
-
-### V3 — Minimal graphical visualizer
-
-After the terminal event model works, choose and explicitly approve a windowing/rendering dependency. Build only the required 2D layer: frame lifecycle, input, timing, rectangles, lines, text, and colors.
-
-Initially visualize insertion sort, merge sort, and binary search. Add pause, step, restart, and speed controls. The renderer and visualizer may depend on algorithms; algorithms must never depend on renderer or platform modules.
-
-### Visualization acceptance criteria
-
-- ordinary algorithm APIs remain independent of rendering;
-- observed and unobserved execution produce identical results;
-- disabled observation has negligible conceptual overhead and requires no allocation;
-- event order is deterministic for a fixed input;
-- terminal visualization works before a graphical dependency is introduced;
-- no general scene graph, ECS, asset pipeline, shader system, or multi-backend renderer is added without a demonstrated need.
 
 ## Milestone 3 — Vector insertion and removal
 
@@ -1590,7 +1557,6 @@ Start with base types, vector, insertion sort, and tests. Compare safety model, 
 Foundation. Mandatory logging and named trace channels; instrument the existing search and vector modules.
 1. Insertion sort.
 2. Merge sort.
-Visualization fast lane: structured sort events, terminal visualizer, then an approved minimal graphical frontend.
 3. Vector insertion/removal.
 4. Number-sorting CLI.
 5. Stack.

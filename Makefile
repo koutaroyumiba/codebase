@@ -1,63 +1,13 @@
-CC ?= cc
-CPPFLAGS ?= -Isrc/c
-CFLAGS ?= -std=c23 -Wall -Wextra -Wpedantic
+.PHONY: all test run clean
 
-SRC_DIR := src/c
-TEST_DIR := tests
-PROGRAM_DIR := programs
-BUILD_DIR := build
-OBJECT_DIR := $(BUILD_DIR)/c
-TARGET := $(BUILD_DIR)/codebase
-TEST_TARGET := $(BUILD_DIR)/codebase_tests
+all:
+	$(MAKE) -C c all
 
-SOURCES := $(shell find $(SRC_DIR) -type f -name '*.c')
-TEST_SOURCES := $(shell find $(TEST_DIR) -type f -name '*.c')
-OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(OBJECT_DIR)/%.o,$(SOURCES))
-TEST_OBJECTS := $(patsubst $(TEST_DIR)/%.c,$(BUILD_DIR)/$(TEST_DIR)/%.o,$(TEST_SOURCES))
-LIB_OBJECTS := $(filter-out $(OBJECT_DIR)/main.o, $(OBJECTS))
-DEPS := $(OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d)
+test:
+	$(MAKE) -C c test
 
-.PHONY: all run test runp clean
-
-all: $(TARGET)
-
-run: $(TARGET)
-	./$(TARGET)
-
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
-
-runp:
-	@test -n "$(PROGRAM)" || { \
-		echo "usage: make runp PROGRAM=<name>"; \
-		exit 2; \
-	}
-	$(MAKE) $(BUILD_DIR)/$(PROGRAM_DIR)/$(PROGRAM)
-	./$(BUILD_DIR)/$(PROGRAM_DIR)/$(PROGRAM)
-
-$(TARGET): $(OBJECTS) | $(BUILD_DIR)
-	$(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
-
-$(TEST_TARGET): $(TEST_OBJECTS) $(LIB_OBJECTS) | $(BUILD_DIR)
-	$(CC) $(TEST_OBJECTS) $(LIB_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
-
-$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(@D)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
-
-$(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
-	@mkdir -p $(@D)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
-
-$(BUILD_DIR)/$(PROGRAM_DIR)/%: $(PROGRAM_DIR)/%.c $(LIB_OBJECTS)
-	@mkdir -p $(@D)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(LIB_OBJECTS) \
-		$(LDFLAGS) $(LDLIBS) -o $@
-
-$(BUILD_DIR):
-	mkdir -p $@
+run:
+	$(MAKE) -C c run
 
 clean:
-	rm -rf $(BUILD_DIR)
-
--include $(DEPS)
+	$(MAKE) -C c clean

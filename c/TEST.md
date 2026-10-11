@@ -10,7 +10,7 @@ The learner writes everything under `src/` and `programs/`. The AI may write or 
 
 ## Before writing tests
 
-1. Read `tmp.md` completely.
+1. Read `PLAN.md` completely.
 2. Identify the single milestone marked **active**.
 3. Inspect its acceptance criteria and required-test list.
 4. Read the relevant public headers, existing implementation, `Makefile`, and current tests.
@@ -126,7 +126,7 @@ Use fixtures only when inline test data would be unreadable. Temporary files sho
 
 Before finishing, verify:
 
-- [ ] Tests correspond to the active milestone in `tmp.md`.
+- [ ] Tests correspond to the active milestone in `PLAN.md`.
 - [ ] Each acceptance criterion has automated coverage where practical.
 - [ ] Tests compile against the documented public API.
 - [ ] Tests do not depend on private representation unless the representation is itself the lesson.
@@ -145,6 +145,6 @@ Report only:
 2. behaviors covered;
 3. the command run and its result;
 4. why the current failure is expected, if the milestone is still red;
-5. the learner's next implementation step from `tmp.md`.
+5. the learner's next implementation step from `PLAN.md`.
 
 Do not include a production implementation, direct solution, or a code snippet that effectively solves the milestone.
